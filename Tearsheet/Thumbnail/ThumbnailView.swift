@@ -99,25 +99,55 @@ final class ThumbnailView: NSView, NSDraggingSource {
 
     func flash(_ message: String) {
         flashLabel.text = message
+        setControlsVisible(false, duration: 0.1)
         flashLabel.isHidden = false
-        controls.isHidden = true
+        flashLabel.alphaValue = 1
+        layoutSubtreeIfNeeded()
+        Darkroom.Motion.popIn(flashLabel, from: 0.94, duration: 0.2)
+        flashGeneration += 1
+        let generation = flashGeneration
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
-            guard let self else { return }
-            flashLabel.isHidden = true
-            controls.isHidden = !(panel?.isHovered ?? false)
+            guard let self, generation == flashGeneration else { return }
+            Darkroom.Motion.animate(0.18, Darkroom.Motion.easeOut, { self.flashLabel.animator().alphaValue = 0 }, completion: {
+                guard generation == self.flashGeneration else { return }
+                self.flashLabel.isHidden = true
+                self.setControlsVisible(self.panel?.isHovered ?? false, duration: 0.15)
+            })
         }
     }
+
+    private var flashGeneration = 0
 
     // MARK: Hover
 
     override func mouseEntered(with event: NSEvent) {
         panel?.isHovered = true
-        controls.isHidden = !flashLabel.isHidden
+        if flashLabel.isHidden { setControlsVisible(true, duration: 0.15) }
     }
 
     override func mouseExited(with event: NSEvent) {
         panel?.isHovered = false
-        controls.isHidden = true
+        setControlsVisible(false, duration: 0.12)
+    }
+
+    private var controlsGeneration = 0
+
+    /// Fades the hover scrim and buttons. Hidden once faded out, so they stop taking clicks;
+    /// a later call supersedes an earlier one still in flight.
+    private func setControlsVisible(_ visible: Bool, duration: TimeInterval) {
+        controlsGeneration += 1
+        let generation = controlsGeneration
+        if visible {
+            if controls.isHidden {
+                controls.alphaValue = 0
+                controls.isHidden = false
+            }
+            Darkroom.Motion.animate(duration, .init(name: .default)) { controls.animator().alphaValue = 1 }
+        } else if !controls.isHidden {
+            Darkroom.Motion.animate(duration, .init(name: .default), { self.controls.animator().alphaValue = 0 }, completion: {
+                if generation == self.controlsGeneration { self.controls.isHidden = true }
+            })
+        }
     }
 
     // MARK: Click and drag out
@@ -149,8 +179,8 @@ final class ThumbnailView: NSView, NSDraggingSource {
     }
 
     func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
-        if operation.isEmpty {
-            panel?.alphaValue = 1
+        if operation.isEmpty, let panel {
+            Darkroom.Motion.animate(0.2, Darkroom.Motion.easeOut) { panel.animator().alphaValue = 1 }
         } else {
             panel?.dismiss()
         }
@@ -171,7 +201,7 @@ final class ThumbnailView: NSView, NSDraggingSource {
             if swipeOffset < -60 {
                 panel.dismiss(slidingLeft: true)
             } else {
-                NSAnimationContext.runAnimationGroup { _ in panel.animateOrigin(to: panel.homeOrigin) }
+                Darkroom.Motion.animate(0.25, Darkroom.Motion.easeOut) { panel.animateOrigin(to: panel.homeOrigin) }
             }
             swipeOffset = 0
         default:

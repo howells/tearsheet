@@ -74,8 +74,11 @@ final class ImagePicker: NSObject {
                 let visible = screen.visibleFrame
                 panel.setFrameOrigin(CGPoint(x: visible.midX - panel.frame.width / 2, y: visible.midY - panel.frame.height / 2))
             }
+            panel.alphaValue = 0
             panel.orderFrontRegardless()
             panel.makeKey()
+            Darkroom.Motion.animate(0.22, Darkroom.Motion.easeOut) { panel.animator().alphaValue = 1 }
+            if let content = panel.contentView { Darkroom.Motion.popIn(content, from: 0.97, duration: 0.22, fades: false) }
             keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 switch Int(event.keyCode) {
                 case 53: self?.finish(nil); return nil
@@ -95,7 +98,8 @@ final class ImagePicker: NSObject {
         self.continuation = nil
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
         keyMonitor = nil
-        panel.orderOut(nil)
+        let panel = panel
+        Darkroom.Motion.animate(0.15, Darkroom.Motion.easeOut, { panel.animator().alphaValue = 0 }, completion: { panel.orderOut(nil) })
         continuation.resume(returning: result)
     }
 }

@@ -22,33 +22,43 @@ final class ThumbnailStack {
         panel.orderFrontRegardless()
     }
 
+    /// Thumbnails arrive from the left edge and leave the same way.
+    private let travel: CGFloat = 24
+
     func dismiss(_ panel: ThumbnailPanel, slidingLeft: Bool = false) {
         guard let index = panels.firstIndex(where: { $0 === panel }) else { return }
         panels.remove(at: index)
         panel.stopTimer()
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.2
+        // A swipe throws the card off screen; otherwise it backs out the way it came in.
+        let distance = Darkroom.Motion.reduced ? 0 : slidingLeft ? panel.frame.maxX - (screen?.visibleFrame.minX ?? 0) : travel
+        Darkroom.Motion.animate(slidingLeft ? 0.25 : 0.2, Darkroom.Motion.easeOut, {
             panel.animator().alphaValue = 0
-            if slidingLeft { panel.animateOrigin(to: CGPoint(x: panel.frame.minX - panel.frame.width, y: panel.frame.minY)) }
-        }, completionHandler: { MainActor.assumeIsolated { panel.orderOut(nil) } })
+            if distance > 0 { panel.animateOrigin(to: CGPoint(x: panel.frame.minX - distance, y: panel.frame.minY)) }
+        }, completion: { panel.orderOut(nil) })
         layout(appearing: nil)
     }
 
     func layout(appearing: ThumbnailPanel?) {
         guard let visible = (screen ?? NSScreen.main)?.visibleFrame else { return }
+        let reduced = Darkroom.Motion.reduced
         var y = visible.minY + margin
         for panel in panels {
             let origin = CGPoint(x: visible.minX + margin, y: y)
             panel.homeOrigin = origin
             if panel === appearing {
-                panel.setFrameOrigin(CGPoint(x: origin.x - 24, y: origin.y))
+                panel.setFrameOrigin(CGPoint(x: origin.x - (reduced ? 0 : travel), y: origin.y))
                 panel.alphaValue = 0
-            }
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.22
-                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animateOrigin(to: origin)
-                panel.animator().alphaValue = 1
+                Darkroom.Motion.animate(0.3, Darkroom.Motion.easeOut) {
+                    panel.animateOrigin(to: origin)
+                    panel.animator().alphaValue = 1
+                }
+            } else if panel.frame.origin != origin {
+                if reduced {
+                    panel.setFrameOrigin(origin)
+                } else {
+                    // Older cards make room by moving between two places on screen.
+                    Darkroom.Motion.animate(0.28, Darkroom.Motion.easeInOut) { panel.animateOrigin(to: origin) }
+                }
             }
             y += panel.frame.height + spacing
         }

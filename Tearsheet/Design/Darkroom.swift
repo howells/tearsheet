@@ -17,6 +17,57 @@ enum Darkroom {
 
     static func valueFont() -> NSFont { .monospacedDigitSystemFont(ofSize: 12, weight: .medium) }
 
+    /// Curves and the reduce-motion switch for every animation in the app.
+    enum Motion {
+        /// Entrances and exits.
+        static let easeOut = CAMediaTimingFunction(controlPoints: 0.23, 1, 0.32, 1)
+        /// Moving between two places on screen.
+        static let easeInOut = CAMediaTimingFunction(controlPoints: 0.77, 0, 0.175, 1)
+
+        /// With Reduce Motion on, things fade in place instead of travelling or scaling.
+        static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+        static func animate(_ duration: TimeInterval, _ curve: CAMediaTimingFunction = easeOut, _ changes: () -> Void, completion: (@MainActor () -> Void)? = nil) {
+            NSAnimationContext.runAnimationGroup({ context in
+                context.duration = duration
+                context.timingFunction = curve
+                context.allowsImplicitAnimation = true
+                changes()
+            }, completionHandler: completion.map { done in { MainActor.assumeIsolated(done) } })
+        }
+
+        /// Grows a layer-backed view's layer from `scale` about its centre, with a fade
+        /// unless the caller fades the whole window instead.
+        static func popIn(_ view: NSView, from scale: CGFloat = 0.96, duration: TimeInterval = 0.2, fades: Bool = true) {
+            guard let layer = view.layer else { return }
+            var animations: [CAAnimation] = []
+            if fades {
+                let fade = CABasicAnimation(keyPath: "opacity")
+                fade.fromValue = 0
+                fade.toValue = 1
+                animations.append(fade)
+            }
+            if !reduced {
+                let grow = CABasicAnimation(keyPath: "transform")
+                grow.fromValue = NSValue(caTransform3D: scaled(scale, about: CGPoint(x: layer.bounds.midX, y: layer.bounds.midY)))
+                grow.toValue = NSValue(caTransform3D: CATransform3DIdentity)
+                animations.append(grow)
+            }
+            let group = CAAnimationGroup()
+            group.animations = animations
+            group.duration = duration
+            group.timingFunction = easeOut
+            layer.add(group, forKey: "popIn")
+        }
+
+        /// AppKit pins a backing layer's anchor at its corner, so scale about the centre by hand.
+        private static func scaled(_ scale: CGFloat, about centre: CGPoint) -> CATransform3D {
+            var t = CATransform3DMakeTranslation(centre.x, centre.y, 0)
+            t = CATransform3DScale(t, scale, scale, 1)
+            return CATransform3DTranslate(t, -centre.x, -centre.y, 0)
+        }
+    }
+
     static func label(_ text: String, size: CGFloat = 13, weight: NSFont.Weight = .regular, color: NSColor = paper) -> NSTextField {
         let label = NSTextField(labelWithString: text)
         label.font = font(size, weight)
