@@ -1,0 +1,54 @@
+name: Tearsheet
+
+options:
+  minimumXcodeGenVersion: 2.45.4
+  deploymentTarget:
+    macOS: "26.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+
+packages:
+  TearsheetCore:
+    path: Packages/TearsheetCore
+
+targets:
+  Tearsheet:
+    type: application
+    platform: macOS
+    sources:
+      - path: Tearsheet
+    dependencies:
+      - package: TearsheetCore
+        product: TearsheetCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.howells.tearsheet
+        PRODUCT_NAME: Tearsheet
+        # A stable Apple Development signature keeps the Screen Recording
+        # grant attached to the app across rebuilds; ad-hoc builds lose it.
+        DEVELOPMENT_TEAM: 26GV92ZQ4L
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: Apple Development
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_APP_SANDBOX: NO
+        GENERATE_INFOPLIST_FILE: YES
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Tearsheet
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+
+schemes:
+  Tearsheet:
+    build:
+      targets:
+        Tearsheet: all
