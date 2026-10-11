@@ -39,6 +39,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate, NSTool
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.toolbarStyle = .unified
+        // The filename would push the colour and size pickers into the overflow menu.
+        window.titleVisibility = .hidden
         window.contentView = buildContent()
         let toolbar = NSToolbar(identifier: "editor")
         toolbar.delegate = self

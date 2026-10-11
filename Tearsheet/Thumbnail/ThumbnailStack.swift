@@ -29,7 +29,7 @@ final class ThumbnailStack {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
             panel.animator().alphaValue = 0
-            if slidingLeft { panel.animator().setFrameOrigin(CGPoint(x: panel.frame.minX - panel.frame.width, y: panel.frame.minY)) }
+            if slidingLeft { panel.animateOrigin(to: CGPoint(x: panel.frame.minX - panel.frame.width, y: panel.frame.minY)) }
         }, completionHandler: { MainActor.assumeIsolated { panel.orderOut(nil) } })
         layout(appearing: nil)
     }
@@ -41,13 +41,13 @@ final class ThumbnailStack {
             let origin = CGPoint(x: visible.minX + margin, y: y)
             panel.homeOrigin = origin
             if panel === appearing {
-                panel.setFrameOrigin(CGPoint(x: origin.x - panel.frame.width / 2, y: origin.y))
+                panel.setFrameOrigin(CGPoint(x: origin.x - 24, y: origin.y))
                 panel.alphaValue = 0
             }
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.22
                 context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animator().setFrameOrigin(origin)
+                panel.animateOrigin(to: origin)
                 panel.animator().alphaValue = 1
             }
             y += panel.frame.height + spacing
@@ -74,5 +74,12 @@ final class ThumbnailStack {
 
     func annotate(_ panel: ThumbnailPanel) {
         onAnnotate?(panel.item)
+    }
+}
+
+extension NSWindow {
+    /// Window animators only animate `frame`; `setFrameOrigin` on the animator jumps or does nothing.
+    func animateOrigin(to origin: CGPoint) {
+        animator().setFrame(CGRect(origin: origin, size: frame.size), display: true)
     }
 }

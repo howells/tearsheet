@@ -58,7 +58,7 @@ final class ThumbnailView: NSView, NSDraggingSource {
         }
         save.toolTip = "Hold ⌥ to save at 1×"
         let centre = NSStackView(views: [copy, save])
-        centre.orientation = .vertical
+        centre.orientation = .horizontal
         centre.spacing = 6
         centre.translatesAutoresizingMaskIntoConstraints = false
 
@@ -73,8 +73,8 @@ final class ThumbnailView: NSView, NSDraggingSource {
             controls.bottomAnchor.constraint(equalTo: bottomAnchor),
             centre.centerXAnchor.constraint(equalTo: controls.centerXAnchor),
             centre.centerYAnchor.constraint(equalTo: controls.centerYAnchor),
-            copy.widthAnchor.constraint(equalToConstant: 76),
-            save.widthAnchor.constraint(equalToConstant: 76),
+            copy.widthAnchor.constraint(equalToConstant: 64),
+            save.widthAnchor.constraint(equalToConstant: 64),
             close.leadingAnchor.constraint(equalTo: controls.leadingAnchor, constant: 6),
             close.topAnchor.constraint(equalTo: controls.topAnchor, constant: 6),
             annotate.trailingAnchor.constraint(equalTo: controls.trailingAnchor, constant: -6),
@@ -173,7 +173,7 @@ final class ThumbnailView: NSView, NSDraggingSource {
             if swipeOffset < -60 {
                 panel.dismiss(slidingLeft: true)
             } else {
-                NSAnimationContext.runAnimationGroup { _ in panel.animator().setFrameOrigin(panel.homeOrigin) }
+                NSAnimationContext.runAnimationGroup { _ in panel.animateOrigin(to: panel.homeOrigin) }
             }
             swipeOffset = 0
         default:

@@ -31,7 +31,8 @@ final class OverlayController {
             windows.append(window)
             window.orderFrontRegardless()
         }
-        NSApp.activate()
+        // No NSApp.activate(): macOS may refuse activation from a hot key. The
+        // overlay is a non-activating panel, which takes keyboard focus anyway.
         let mouseScreen = NSScreen.underMouse
         (windows.first { $0.screen == mouseScreen } ?? windows.first)?.makeKey()
         NSCursor.crosshair.set()
@@ -74,9 +75,11 @@ final class OverlayController {
     }
 }
 
-final class OverlayWindow: NSWindow {
+final class OverlayWindow: NSPanel {
     init(screen: NSScreen, contentView: NSView) {
-        super.init(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
+        super.init(contentRect: screen.frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        becomesKeyOnlyIfNeeded = false
+        hidesOnDeactivate = false
         setFrame(screen.frame, display: false)
         level = .screenSaver
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
