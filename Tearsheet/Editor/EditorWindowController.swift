@@ -39,6 +39,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate, NSTool
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.toolbarStyle = .unified
+        // Graphite chrome whatever the system appearance, so the capture stays the brightest thing on screen.
+        window.appearance = NSAppearance(named: .darkAqua)
         // The filename would push the colour and size pickers into the overflow menu.
         window.titleVisibility = .hidden
         window.contentView = buildContent()
@@ -114,23 +116,26 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate, NSTool
         let container = NSView()
         canvas.translatesAutoresizingMaskIntoConstraints = false
 
-        let hint = NSTextField(labelWithString: "⇧ constrains · ⌫ deletes · double-click text to edit · ⌥ Save for 1×")
-        hint.textColor = .secondaryLabelColor
-        hint.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
-        hint.lineBreakMode = .byTruncatingTail
-        hint.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let dimensions = NSTextField(labelWithString: "\(item.original.width) × \(item.original.height)")
+        dimensions.textColor = .secondaryLabelColor
+        dimensions.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+        dimensions.toolTip = "Pixels"
 
         let save = NSButton(title: "Save", target: self, action: #selector(saveCapture(_:)))
-        save.toolTip = "Save (⌘S)"
+        save.toolTip = "Save (⌘S, hold ⌥ for 1×)"
         let copy = NSButton(title: "Copy", target: self, action: #selector(copyAndClose(_:)))
         copy.toolTip = "Copy and close (⌘C or ↩)"
-        copy.bezelColor = .controlAccentColor
+        copy.bezelColor = AnnotationColor.paperColor
+        copy.attributedTitle = NSAttributedString(string: "Copy", attributes: [
+            .foregroundColor: AnnotationColor.inkColor,
+            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold),
+        ])
         for button in [save, copy] {
             button.controlSize = .large
             button.widthAnchor.constraint(greaterThanOrEqualToConstant: 84).isActive = true
         }
 
-        let bar = NSStackView(views: [hint, NSView(), save, copy])
+        let bar = NSStackView(views: [dimensions, NSView(), save, copy])
         bar.orientation = .horizontal
         bar.spacing = 10
         bar.edgeInsets = NSEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
@@ -181,8 +186,8 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
 
         sizePicker.segmentCount = StrokeSize.allCases.count
-        for (index, diameter) in [5.0, 8.0, 12.0].enumerated() {
-            sizePicker.setImage(Swatch.dot(diameter: diameter), forSegment: index)
+        for size in StrokeSize.allCases {
+            sizePicker.setImage(Swatch.stroke(width: size.stroke), forSegment: size.rawValue)
         }
         sizePicker.setToolTip("Small", forSegment: 0)
         sizePicker.setToolTip("Medium", forSegment: 1)
@@ -199,6 +204,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate, NSTool
             picker.target = self
             picker.action = #selector(pickerChanged(_:))
             picker.segmentStyle = .separated
+            picker.selectedSegmentBezelColor = AnnotationColor.paperColor
         }
         syncControls()
     }
@@ -255,16 +261,23 @@ private enum Swatch {
             color.setFill()
             let circle = NSBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5))
             circle.fill()
-            NSColor.black.withAlphaComponent(0.25).setStroke()
-            circle.lineWidth = 0.5
+            // A light rim keeps graphite visible on the dark toolbar.
+            NSColor.white.withAlphaComponent(color == AnnotationColor.graphite.nsColor ? 0.35 : 0.15).setStroke()
+            circle.lineWidth = 1
             circle.stroke()
         }
     }
 
-    static func dot(diameter: CGFloat) -> NSImage {
+    /// A short sample of the pen at this width, so the control shows what it draws.
+    static func stroke(width: CGFloat) -> NSImage {
         let template = image(size: 16) { rect in
-            NSColor.black.setFill()
-            NSBezierPath(ovalIn: CGRect(x: rect.midX - diameter / 2, y: rect.midY - diameter / 2, width: diameter, height: diameter)).fill()
+            NSColor.black.setStroke()
+            let line = NSBezierPath()
+            line.move(to: CGPoint(x: rect.minX + 1 + width / 2, y: rect.midY))
+            line.line(to: CGPoint(x: rect.maxX - 1 - width / 2, y: rect.midY))
+            line.lineWidth = width
+            line.lineCapStyle = .round
+            line.stroke()
         }
         template.isTemplate = true
         return template

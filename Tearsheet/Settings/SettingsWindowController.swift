@@ -40,6 +40,7 @@ private struct SettingsView: View {
 
             Section("General") {
                 Toggle("Launch at login", isOn: $launchAtLogin)
+                    .tint(Color(nsColor: AnnotationColor.paperColor))
                     .onChange(of: launchAtLogin) { _, enabled in
                         do {
                             try LaunchAtLogin.set(enabled)

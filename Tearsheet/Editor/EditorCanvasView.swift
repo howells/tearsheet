@@ -98,7 +98,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func draw(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
-        NSColor(white: 0.16, alpha: 1).setFill()
+        AnnotationColor.inkColor.setFill()
         bounds.fill()
 
         let hiddenID = lifted?.id
@@ -122,11 +122,19 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
             AnnotationRenderer.draw(draft, number: document.counterNumber(for: draft.id), in: context, scale: scale)
         }
         if let selectedID, let selected = (lifted?.id == selectedID ? lifted : document.annotations.first { $0.id == selectedID }) {
-            context.setStrokeColor(NSColor.controlAccentColor.cgColor)
-            context.setLineWidth(1.5 / zoom)
-            context.setLineDash(phase: 0, lengths: [5 / zoom, 4 / zoom])
-            context.stroke(selected.bounds(scale: scale).insetBy(dx: -4 / zoom, dy: -4 / zoom))
-            context.setLineDash(phase: 0, lengths: [])
+            // A hairline outline with square corner handles, in paper so it reads against any ink.
+            let outline = selected.bounds(scale: scale).insetBy(dx: -4 / zoom, dy: -4 / zoom)
+            let handle = 8 / zoom
+            context.setStrokeColor(AnnotationColor.paperColor.cgColor)
+            context.setLineWidth(1 / zoom)
+            context.stroke(outline)
+            context.setFillColor(AnnotationColor.paperColor.cgColor)
+            context.setShadow(offset: .zero, blur: 2 / zoom, color: NSColor.black.withAlphaComponent(0.5).cgColor)
+            for corner in [CGPoint(x: outline.minX, y: outline.minY), CGPoint(x: outline.maxX, y: outline.minY),
+                           CGPoint(x: outline.minX, y: outline.maxY), CGPoint(x: outline.maxX, y: outline.maxY)] {
+                context.fill(CGRect(x: corner.x - handle / 2, y: corner.y - handle / 2, width: handle, height: handle))
+            }
+            context.setShadow(offset: .zero, blur: 0)
         }
         if let crop = cropDraft ?? document.crop {
             context.setFillColor(NSColor.black.withAlphaComponent(0.55).cgColor)
@@ -177,6 +185,24 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         document.annotations.last { $0.contains(point, tolerance: 4 / zoom, scale: scale) }
     }
 
+    /// Counters dropped near an arrow's tail or a rectangle's corner land exactly on it.
+    private func snapped(_ point: CGPoint) -> CGPoint {
+        var anchors: [CGPoint] = []
+        for annotation in document.annotations {
+            switch annotation.shape {
+            case let .arrow(from, _): anchors.append(from)
+            case let .rectangle(rect):
+                anchors += [CGPoint(x: rect.minX, y: rect.minY), CGPoint(x: rect.maxX, y: rect.minY),
+                            CGPoint(x: rect.minX, y: rect.maxY), CGPoint(x: rect.maxX, y: rect.maxY)]
+            default: break
+            }
+        }
+        let reach = size.counterDiameter * scale * 0.75
+        let nearest = anchors.min { hypot($0.x - point.x, $0.y - point.y) < hypot($1.x - point.x, $1.y - point.y) }
+        guard let nearest, hypot(nearest.x - point.x, nearest.y - point.y) <= reach else { return point }
+        return nearest
+    }
+
     // MARK: Mouse
 
     override func mouseDown(with event: NSEvent) {
@@ -203,7 +229,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         let start = clampToImage(point)
         switch tool {
         case .counter:
-            change { $0.annotations.append(Annotation(shape: .counter(center: start), color: color, size: size)) }
+            change { $0.annotations.append(Annotation(shape: .counter(center: snapped(start)), color: color, size: size)) }
         case .text:
             beginText(at: start, string: "", replacing: nil)
         case .crop:
@@ -301,7 +327,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         field.focusRingType = .none
         field.isEditable = true
         field.textColor = color.nsColor
-        field.font = .systemFont(ofSize: size.fontPoints * scale * zoom, weight: .bold)
+        field.font = .systemFont(ofSize: size.textPoints * scale * zoom, weight: .semibold)
         field.delegate = self
         field.cell?.wraps = false
         field.cell?.isScrollable = true
@@ -314,7 +340,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     private func repositionTextField() {
         guard let textField else { return }
-        textField.font = .systemFont(ofSize: size.fontPoints * scale * zoom, weight: .bold)
+        textField.font = .systemFont(ofSize: size.textPoints * scale * zoom, weight: .semibold)
         textField.sizeToFit()
         let width = max(textField.frame.width + 16, 60)
         let topLeft = toView(textOrigin)

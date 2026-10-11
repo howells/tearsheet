@@ -52,7 +52,7 @@ final class ThumbnailView: NSView, NSDraggingSource {
         controls.isHidden = true
         addSubview(controls)
 
-        let copy = ThumbnailButton.text("Copy") { [weak self] in self?.panel?.copy() }
+        let copy = ThumbnailButton.text("Copy", primary: true) { [weak self] in self?.panel?.copy() }
         let save = ThumbnailButton.text("Save") { [weak self] in
             self?.panel?.save(atOneX: NSEvent.modifierFlags.contains(.option))
         }
@@ -186,10 +186,17 @@ final class ThumbnailView: NSView, NSDraggingSource {
 private final class ThumbnailButton: NSButton {
     private var handler: (() -> Void)?
 
-    static func text(_ title: String, handler: @escaping () -> Void) -> ThumbnailButton {
+    static func text(_ title: String, primary: Bool = false, handler: @escaping () -> Void) -> ThumbnailButton {
         let button = ThumbnailButton(title: title, target: nil, action: nil)
         button.bezelStyle = .glass
         button.controlSize = .regular
+        if primary {
+            button.bezelColor = AnnotationColor.paperColor
+            button.attributedTitle = NSAttributedString(string: title, attributes: [
+                .foregroundColor: AnnotationColor.inkColor,
+                .font: NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold),
+            ])
+        }
         button.configure(handler)
         return button
     }

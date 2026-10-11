@@ -41,29 +41,47 @@ enum AnnotationTool: CaseIterable {
 }
 
 enum AnnotationColor: Int, CaseIterable, Sendable {
-    case red, yellow, green, blue, black, white
+    case red, amber, green, blue, graphite, paper
 
     var nsColor: NSColor {
         switch self {
-        case .red: NSColor(srgbRed: 1.0, green: 0.23, blue: 0.19, alpha: 1)
-        case .yellow: NSColor(srgbRed: 1.0, green: 0.8, blue: 0.0, alpha: 1)
-        case .green: NSColor(srgbRed: 0.2, green: 0.78, blue: 0.35, alpha: 1)
-        case .blue: NSColor(srgbRed: 0.0, green: 0.48, blue: 1.0, alpha: 1)
-        case .black: NSColor(srgbRed: 0.1, green: 0.1, blue: 0.1, alpha: 1)
-        case .white: .white
+        case .red: NSColor(srgbRed: 1.0, green: 0.231, blue: 0.184, alpha: 1)
+        case .amber: NSColor(srgbRed: 1.0, green: 0.690, blue: 0.125, alpha: 1)
+        case .green: NSColor(srgbRed: 0.204, green: 0.780, blue: 0.349, alpha: 1)
+        case .blue: NSColor(srgbRed: 0.039, green: 0.518, blue: 1.0, alpha: 1)
+        case .graphite: NSColor(srgbRed: 0.227, green: 0.227, blue: 0.247, alpha: 1)
+        case .paper: Self.paperColor
         }
     }
 
-    /// Ink for numbers and text drawn on top of this colour.
-    var contrasting: NSColor { self == .yellow || self == .white ? .black : .white }
+    static let paperColor = NSColor(srgbRed: 0.957, green: 0.949, blue: 0.933, alpha: 1)
+    static let inkColor = NSColor(srgbRed: 0.055, green: 0.055, blue: 0.063, alpha: 1)
+
+    /// Light inks (amber, paper) take a dark halo and dark lettering; the rest take paper.
+    private var isLight: Bool { self == .amber || self == .paper }
+
+    /// The thin outline around every stroke that keeps it legible on any screenshot.
+    var halo: NSColor { isLight ? Self.inkColor.withAlphaComponent(0.75) : Self.paperColor }
+
+    /// Lettering drawn on top of this colour: counter numerals and boxed text.
+    var contrasting: NSColor { isLight ? Self.inkColor : Self.paperColor }
 }
 
+/// One pen at three sizes. Values are points at 1x; multiply by the capture's scale for pixels.
 enum StrokeSize: Int, CaseIterable, Sendable {
     case small, medium, large
 
-    /// Stroke width in points; multiplied by the capture's scale for pixels.
-    var points: CGFloat { [3, 5, 8][rawValue] }
-    var fontPoints: CGFloat { [16, 24, 36][rawValue] }
+    var stroke: CGFloat { [2, 3, 4.5][rawValue] }
+    /// Halo width on each side of the stroke.
+    var halo: CGFloat { [1, 1.5, 2][rawValue] }
+    var arrowArm: CGFloat { [10, 15, 22][rawValue] }
+    var cornerRadius: CGFloat { [4, 6, 8][rawValue] }
+    var counterDiameter: CGFloat { [18, 26, 36][rawValue] }
+    var numeralPoints: CGFloat { [11, 15, 21][rawValue] }
+    var textPoints: CGFloat { [13, 17, 24][rawValue] }
+    var pixelBlock: CGFloat { [6, 10, 16][rawValue] }
+    /// The highlighter is a broad marker, not the pen.
+    var marker: CGFloat { [14, 22, 34][rawValue] }
 }
 
 enum TextStyle: Equatable, Sendable {

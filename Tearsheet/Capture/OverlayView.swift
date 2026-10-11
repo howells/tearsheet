@@ -114,9 +114,9 @@ private final class OverlayDecorationView: NSView {
         context.fillPath(using: .evenOdd)
 
         if let selection = overlay.selection, let pixels = overlay.pixelSelection, !selection.isEmpty {
-            context.setStrokeColor(NSColor.white.withAlphaComponent(0.9).cgColor)
-            context.setLineWidth(1)
-            context.stroke(selection.insetBy(dx: -0.5, dy: -0.5))
+            context.setStrokeColor(AnnotationColor.paperColor.cgColor)
+            context.setLineWidth(1.5)
+            context.stroke(selection.insetBy(dx: -0.75, dy: -0.75))
             drawSizeLabel("\(Int(pixels.width)) × \(Int(pixels.height))", near: selection)
         }
 
