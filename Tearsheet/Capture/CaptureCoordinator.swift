@@ -6,6 +6,7 @@ final class CaptureCoordinator {
     private let thumbnails = ThumbnailStack()
     private let editors = EditorRegistry()
     private var isCapturing = false
+    private var isAskingConsent = false
 
     init() {
         thumbnails.onAnnotate = { [editors] item in editors.open(item) }
@@ -22,13 +23,19 @@ final class CaptureCoordinator {
 
     private func select(mode: OverlayController.Mode, openEditor: Bool) async {
         guard !isCapturing else { return }
-        isCapturing = true
-        defer { isCapturing = false }
-
         let previousApp = NSWorkspace.shared.frontmostApplication
         let tab = BrowserTab(app: previousApp) ?? BrowserTab.underPointer()
         // Ask for Automation consent before the overlay, which would hide the system prompt.
-        if mode == .extract, let tab { await tab.requestAutomationConsent() }
+        // The prompt can sit unanswered, so it's asked outside the capture lock: ⇧⌘4 still works meanwhile.
+        if mode == .extract, let tab {
+            guard !isAskingConsent else { return }
+            isAskingConsent = true
+            await tab.requestAutomationConsent()
+            isAskingConsent = false
+            guard !isCapturing else { return }
+        }
+        isCapturing = true
+        defer { isCapturing = false }
 
         let snapshots: [DisplaySnapshot]
         do {
