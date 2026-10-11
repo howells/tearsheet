@@ -43,7 +43,6 @@ final class ImagePicker: NSObject {
         stack.orientation = .vertical
         stack.alignment = .trailing
         stack.spacing = 16
-        stack.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         let background = NSView()
@@ -55,10 +54,10 @@ final class ImagePicker: NSObject {
         background.layer?.masksToBounds = true
         background.addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: background.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: background.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: background.trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: background.bottomAnchor),
+            stack.topAnchor.constraint(equalTo: background.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -16),
+            stack.bottomAnchor.constraint(equalTo: background.bottomAnchor, constant: -16),
             buttons.widthAnchor.constraint(equalTo: grid.widthAnchor),
         ])
         panel.contentView = background
