@@ -23,12 +23,19 @@ enum ScreenRecordingPermission {
 }
 
 enum SystemScreenshotShortcut {
-    /// Whether macOS still owns ⇧⌘4 ("Save picture of selected area as a file",
-    /// symbolic hot key 30). Read-only: Tearsheet never edits this domain.
+    /// Whether any macOS screenshot shortcut still claims ⇧⌘4. That is "Save picture
+    /// of selected area" (symbolic hot key 30) by default, but any of the screenshot
+    /// entries can be rebound to it. Read-only: Tearsheet never edits this domain.
     static var isEnabled: Bool {
         let value = CFPreferencesCopyAppValue("AppleSymbolicHotKeys" as CFString, "com.apple.symbolichotkeys" as CFString)
-        guard let keys = value as? [String: Any], let entry = keys["30"] as? [String: Any] else { return true }
-        return (entry["enabled"] as? Bool) ?? true
+        let keys = value as? [String: Any] ?? [:]
+        let shiftCommand4 = (keyCode: 21, modifiers: 0x12_0000)
+        return ["28", "29", "30", "31", "184"].contains { id in
+            guard let entry = keys[id] as? [String: Any] else { return id == "30" }
+            guard (entry["enabled"] as? Bool) ?? true else { return false }
+            guard let parameters = (entry["value"] as? [String: Any])?["parameters"] as? [Int], parameters.count == 3 else { return id == "30" }
+            return parameters[1] == shiftCommand4.keyCode && parameters[2] == shiftCommand4.modifiers
+        }
     }
 
     static func openSettings() {

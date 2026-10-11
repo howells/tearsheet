@@ -26,7 +26,7 @@ final class CaptureCoordinator {
         defer { isCapturing = false }
 
         let previousApp = NSWorkspace.shared.frontmostApplication
-        let tab = BrowserTab(app: previousApp)
+        let tab = BrowserTab(app: previousApp) ?? BrowserTab.underPointer()
         // Ask for Automation consent before the overlay, which would hide the system prompt.
         if mode == .extract, let tab { await tab.requestAutomationConsent() }
 

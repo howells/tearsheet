@@ -64,6 +64,22 @@ struct BrowserTab: Sendable {
         processIdentifier = app.processIdentifier
     }
 
+    /// Safari or Chrome when its window is the topmost one under the pointer, even
+    /// if another app (a chat, an editor) has keyboard focus.
+    static func underPointer() -> BrowserTab? {
+        guard let primary = NSScreen.screens.first else { return nil }
+        let mouse = NSEvent.mouseLocation
+        let point = CGPoint(x: mouse.x, y: primary.frame.height - mouse.y)
+        let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        for window in windows where (window[kCGWindowLayer as String] as? Int) == 0 {
+            guard let bounds = window[kCGWindowBounds as String] as? NSDictionary,
+                  let frame = CGRect(dictionaryRepresentation: bounds), frame.contains(point),
+                  let pid = window[kCGWindowOwnerPID as String] as? pid_t else { continue }
+            return BrowserTab(app: NSRunningApplication(processIdentifier: pid))
+        }
+        return nil
+    }
+
     /// The browser's front window in global points, origin top-left, as the window server has it.
     func frontWindowFrame() -> CGRect? {
         let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
