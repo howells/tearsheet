@@ -73,6 +73,7 @@ struct WebImageFetcher: Sendable {
             try await Task.sleep(for: .milliseconds(150))
         }
         guard let status, status.state == "done", let length = status.length, length > 0 else { return nil }
+        if let type = status.type, !type.isEmpty, !Self.isImageType(type) { return nil }
 
         var base64 = ""
         let chunk = 1_000_000
@@ -105,7 +106,7 @@ struct WebImageFetcher: Sendable {
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode), !data.isEmpty else { return nil }
         let type = http.value(forHTTPHeaderField: "Content-Type")
         // A login page or error document served with 200 is not the image.
-        if let type, type.lowercased().hasPrefix("text/html") { return nil }
+        if let type, !Self.isImageType(type) { return nil }
         return FetchedImage(data: data, mimeType: type, filename: WebImageFilename.name(for: url, mimeType: type))
     }
 
@@ -122,6 +123,12 @@ struct WebImageFetcher: Sendable {
             : payload.removingPercentEncoding.map { Data($0.utf8) }
         guard let data else { return nil }
         return FetchedImage(data: data, mimeType: mimeType, filename: WebImageFilename.name(for: url, mimeType: mimeType))
+    }
+
+    /// `image/*`, or a generic binary type some servers use for images.
+    private static func isImageType(_ type: String) -> Bool {
+        let lower = type.lowercased()
+        return lower.hasPrefix("image/") || lower.hasPrefix("application/octet-stream") || lower.hasPrefix("binary/octet-stream")
     }
 
     private static func jsonString(_ value: String) throws -> String {

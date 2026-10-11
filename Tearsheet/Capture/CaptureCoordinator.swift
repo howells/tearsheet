@@ -95,6 +95,7 @@ final class CaptureCoordinator {
 
     /// Scans the tab and places each image on screen.
     private static func screenImages(in tab: BrowserTab) async throws -> [ScreenImage] {
+        try await tab.checkAutomationConsent()
         let scan = try await tab.scan()
         guard let window = tab.frontWindowFrame(), let primary = NSScreen.screens.first else {
             throw BrowserTab.Failure.noWindow(tab.browser)
@@ -140,11 +141,9 @@ final class CaptureCoordinator {
     private func makeItem(_ candidate: ScreenImage, fetched: FetchedImage?, snapshots: [DisplaySnapshot]) throws -> CaptureItem? {
         let rendered = renderedCopy(of: candidate, in: snapshots)
         let scale = rendered?.scale ?? NSScreen.main?.backingScaleFactor ?? 2
-        if let fetched {
-            let origin = WebOrigin(data: fetched.data, filename: fetched.filename)
-            if let image = ImageCoding.decode(fetched.data, rasterScale: scale) ?? rendered?.image {
-                return try CaptureItem(image: image, scale: scale, web: origin)
-            }
+        // Bytes that don't decode (an error page, a login form) aren't the image; use the rendered copy.
+        if let fetched, let image = ImageCoding.decode(fetched.data, rasterScale: scale) {
+            return try CaptureItem(image: image, scale: scale, web: WebOrigin(data: fetched.data, filename: fetched.filename))
         }
         guard let rendered else { return nil }
         var url: URL?

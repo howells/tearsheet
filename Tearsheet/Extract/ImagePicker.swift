@@ -180,6 +180,9 @@ private final class PickerTile: NSButton {
 
     override func resetCursorRects() { addCursorRect(bounds, cursor: .pointingHand) }
 
+    /// The picture and caption cover the button; keep clicks on the button itself.
+    override func hitTest(_ point: NSPoint) -> NSView? { frame.contains(point) ? self : nil }
+
     private static func caption(for candidate: ScreenImage) -> String {
         switch candidate.image.source {
         case let .url(url): WebImageFilename.name(for: url, mimeType: nil)

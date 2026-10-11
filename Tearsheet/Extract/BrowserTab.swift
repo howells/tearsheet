@@ -29,6 +29,7 @@ struct BrowserTab: Sendable {
 
     nonisolated enum Failure: LocalizedError {
         case notAllowed(Browser)
+        case consentNeeded(Browser)
         case javaScriptOff(Browser)
         case noWindow(Browser)
         case script(String)
@@ -36,6 +37,7 @@ struct BrowserTab: Sendable {
         var errorDescription: String? {
             switch self {
             case let .notAllowed(browser): "Tearsheet isn’t allowed to control \(browser.name)"
+            case let .consentNeeded(browser): "Tearsheet needs permission to read \(browser.name)"
             case let .javaScriptOff(browser): "\(browser.name) won’t run JavaScript from Tearsheet"
             case let .noWindow(browser): "No \(browser.name) window to read"
             case .script: "Couldn’t read the page"
@@ -45,6 +47,7 @@ struct BrowserTab: Sendable {
         var recoverySuggestion: String? {
             switch self {
             case .notAllowed: "Allow it in System Settings → Privacy & Security → Automation → Tearsheet."
+            case .consentNeeded: "Press Esc, then ⌥⇧⌘I to allow it."
             case let .javaScriptOff(browser): browser.javaScriptSetting
             case .noWindow: nil
             case let .script(message): message
@@ -78,9 +81,25 @@ struct BrowserTab: Sendable {
     /// consent prompt the first time. Blocks until answered, so it runs off the main thread.
     func requestAutomationConsent() async {
         let bundleID = browser.rawValue
+        _ = await Self.automationPermission(bundleID: bundleID, ask: true)
+    }
+
+    /// Fails early when consent was never given: on the Tab path the system prompt
+    /// would open underneath the overlay, so the user is sent to ⌥⇧⌘I instead.
+    func checkAutomationConsent() async throws {
+        switch await Self.automationPermission(bundleID: browser.rawValue, ask: false) {
+        case OSStatus(errAEEventWouldRequireUserConsent): throw Failure.consentNeeded(browser)
+        case OSStatus(errAEEventNotPermitted): throw Failure.notAllowed(browser)
+        default: break
+        }
+    }
+
+    nonisolated private static func automationPermission(bundleID: String, ask: Bool) async -> OSStatus {
         await Task.detached {
-            var target = NSAppleEventDescriptor(bundleIdentifier: bundleID).aeDesc!.pointee
-            _ = AEDeterminePermissionToAutomateTarget(&target, typeWildCard, typeWildCard, true)
+            let descriptor = NSAppleEventDescriptor(bundleIdentifier: bundleID)
+            return withExtendedLifetime(descriptor) {
+                AEDeterminePermissionToAutomateTarget(descriptor.aeDesc!, typeWildCard, typeWildCard, ask)
+            }
         }.value
     }
 
