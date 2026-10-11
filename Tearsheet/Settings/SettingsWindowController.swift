@@ -66,7 +66,7 @@ private struct SettingsView: View {
                             TintedButton("Choose…", action: chooseFolder)
                         }
                     }
-                    Divider().overlay(Color.white.opacity(0.06))
+                    Hairline()
                     Row(height: 52) {
                         Text("Open at login")
                     } trailing: {
@@ -96,11 +96,11 @@ private struct SettingsView: View {
                         .padding(.horizontal, 4)
                     VStack(spacing: 0) {
                         ShortcutRow(title: "Capture region", keys: ["⇧", "⌘", "4"])
-                        Divider().overlay(Color.white.opacity(0.06))
+                        Hairline()
                         ShortcutRow(title: "Capture and annotate", keys: ["⌥", "⇧", "⌘", "4"])
-                        Divider().overlay(Color.white.opacity(0.06))
+                        Hairline()
                         ShortcutRow(title: "Repeat last region", keys: ["⇧", "⌘", "6"])
-                        Divider().overlay(Color.white.opacity(0.06))
+                        Hairline()
                         ShortcutRow(title: "Extract images", keys: ["⌥", "⇧", "⌘", "I"])
                     }
                     .groupBox()
@@ -120,7 +120,7 @@ private struct SettingsView: View {
                         }
                     }
                     if systemShortcutOn {
-                        Divider().overlay(Color.white.opacity(0.06))
+                        Hairline()
                         Row(height: 52, trailingPadding: 6) {
                             Text("macOS screenshot shortcut")
                         } trailing: {
@@ -273,12 +273,16 @@ private struct PaperToggle: View {
     }
 }
 
+/// One point of white at 6%, between rows. A system `Divider` draws its own line under any tint.
+private struct Hairline: View {
+    var body: some View {
+        Rectangle().fill(Color(nsColor: Darkroom.hairline)).frame(height: 1)
+    }
+}
+
 private extension View {
+    /// A raised panel with no outline; the fill alone separates it from the window.
     func groupBox() -> some View {
-        background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.raised)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
-        )
+        background(RoundedRectangle(cornerRadius: 10).fill(Color.raised))
     }
 }
