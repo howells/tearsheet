@@ -6,4 +6,10 @@ A personal macOS menu-bar app for region screenshots and light annotation. Spec 
 scripts/install.sh
 ```
 
-Then turn off System Settings → Keyboard → Keyboard Shortcuts → Screenshots → "Save picture of selected area as a file" so ⇧⌘4 reaches Tearsheet, and grant Screen Recording when asked.
+Then turn off both "selected area" shortcuts in System Settings → Keyboard → Keyboard Shortcuts → Screenshots so ⇧⌘4 reaches Tearsheet, and grant Screen Recording when asked.
+
+To publish a notarised release of the version in `project.yml`:
+
+```sh
+ASC_ISSUER_ID=<uuid> scripts/release.sh
+```
