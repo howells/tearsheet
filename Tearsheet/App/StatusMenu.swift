@@ -10,10 +10,38 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         self.coordinator = coordinator
         self.openSettings = openSettings
         super.init()
-        item.button?.image = NSImage(systemSymbolName: "rectangle.dashed", accessibilityDescription: "Tearsheet")
+        item.button?.image = Self.glyph
         menu.delegate = self
         item.menu = menu
     }
+
+    /// The app icon reduced to one colour: a print with its corner turned up.
+    private static let glyph: NSImage = {
+        let image = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
+            NSColor.black.set()
+            let sheet = NSBezierPath()
+            sheet.move(to: NSPoint(x: 4.5, y: 2.5))
+            sheet.line(to: NSPoint(x: 13.5, y: 2.5))
+            sheet.line(to: NSPoint(x: 13.5, y: 11))
+            sheet.line(to: NSPoint(x: 10, y: 14.5))
+            sheet.line(to: NSPoint(x: 4.5, y: 14.5))
+            sheet.close()
+            let fold = NSBezierPath()
+            fold.move(to: NSPoint(x: 13.5, y: 11))
+            fold.line(to: NSPoint(x: 10, y: 11))
+            fold.line(to: NSPoint(x: 10, y: 14.5))
+            for path in [sheet, fold] {
+                path.lineWidth = 1.5
+                path.lineJoinStyle = .round
+                path.stroke()
+            }
+            NSBezierPath(rect: NSRect(x: 6.5, y: 5, width: 5, height: 3.5)).fill()
+            return true
+        }
+        image.isTemplate = true
+        image.accessibilityDescription = "Tearsheet"
+        return image
+    }()
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
