@@ -23,6 +23,7 @@ final class ThumbnailView: NSView, NSDraggingSource {
         imageLayer.contents = item.image
         layer?.addSublayer(imageLayer)
 
+        if item.web?.isRenderedCopy == true { buildRenderedCopyBadge() }
         buildControls()
         buildFlashLabel()
         addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
@@ -79,6 +80,22 @@ final class ThumbnailView: NSView, NSDraggingSource {
             close.topAnchor.constraint(equalTo: controls.topAnchor, constant: 6),
             annotate.trailingAnchor.constraint(equalTo: controls.trailingAnchor, constant: -6),
             annotate.topAnchor.constraint(equalTo: controls.topAnchor, constant: 6),
+        ])
+    }
+
+    /// Marks an extracted image that is a screenshot of the page, not the original file.
+    private func buildRenderedCopyBadge() {
+        let badge = NSTextField(labelWithString: "Rendered copy")
+        badge.font = .systemFont(ofSize: 11, weight: .semibold)
+        badge.textColor = AnnotationColor.paperColor
+        badge.wantsLayer = true
+        badge.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
+        badge.layer?.cornerRadius = 4
+        badge.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(badge)
+        NSLayoutConstraint.activate([
+            badge.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
+            badge.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
         ])
     }
 

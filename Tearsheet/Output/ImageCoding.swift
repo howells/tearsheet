@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
@@ -12,6 +13,24 @@ enum ImageCoding {
         CGImageDestinationAddImage(destination, image, properties)
         CGImageDestinationFinalize(destination)
         return data as Data
+    }
+
+    /// The first frame of anything ImageIO reads (PNG, JPEG, WebP, AVIF, GIF, HEIC).
+    /// SVG goes through NSImage and is rasterised at `rasterScale` pixels per point.
+    static func decode(_ data: Data, rasterScale: CGFloat) -> CGImage? {
+        if let source = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(source) > 0,
+           let image = CGImageSourceCreateImageAtIndex(source, 0, nil) {
+            return image
+        }
+        guard let vector = NSImage(data: data), vector.size.width >= 1, vector.size.height >= 1 else { return nil }
+        let width = Int((vector.size.width * rasterScale).rounded())
+        let height = Int((vector.size.height * rasterScale).rounded())
+        guard let context = bitmapContext(width: width, height: height, colorSpace: nil) else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+        vector.draw(in: CGRect(x: 0, y: 0, width: width, height: height))
+        NSGraphicsContext.restoreGraphicsState()
+        return context.makeImage()
     }
 
     static func resized(_ image: CGImage, by factor: CGFloat) -> CGImage {

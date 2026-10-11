@@ -11,6 +11,7 @@ final class HotKeyCenter {
         static let captureRegion = Shortcut(keyCode: kVK_ANSI_4, modifiers: cmdKey | shiftKey)
         static let captureIntoEditor = Shortcut(keyCode: kVK_ANSI_4, modifiers: cmdKey | shiftKey | optionKey)
         static let repeatLastRegion = Shortcut(keyCode: kVK_ANSI_6, modifiers: cmdKey | shiftKey)
+        static let extractImages = Shortcut(keyCode: kVK_ANSI_I, modifiers: cmdKey | shiftKey | optionKey)
     }
 
     private var actions: [UInt32: () -> Void] = [:]

@@ -26,6 +26,11 @@ targets:
     platform: macOS
     sources:
       - path: Tearsheet
+    entitlements:
+      path: Tearsheet/Tearsheet.entitlements
+      properties:
+        # Reading images off the front Safari or Chrome tab.
+        com.apple.security.automation.apple-events: true
     dependencies:
       - package: TearsheetCore
         product: TearsheetCore
@@ -46,6 +51,7 @@ targets:
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_CFBundleDisplayName: Tearsheet
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        INFOPLIST_KEY_NSAppleEventsUsageDescription: Tearsheet reads the images on the page in front so you can copy the originals.
 
 schemes:
   Tearsheet:

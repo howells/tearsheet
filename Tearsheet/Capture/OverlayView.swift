@@ -38,16 +38,51 @@ final class OverlayView: NSView {
         decorations.needsDisplay = true
     }
 
+    func refresh() { decorations.needsDisplay = true }
+
+    func modeChanged() {
+        selection = nil
+        updateCursor()
+        decorations.needsDisplay = true
+    }
+
+    var isExtracting: Bool { controller.mode == .extract }
+    var imageState: OverlayController.ImageState { controller.imageState }
+
+    /// The page's images on this display, in view coordinates.
+    var localImages: [(image: ScreenImage, rect: CGRect)] {
+        let origin = snapshot.screen.frame.origin
+        return controller.images.compactMap { image in
+            let rect = image.frame.offsetBy(dx: -origin.x, dy: -origin.y)
+            return rect.intersects(bounds) ? (image, rect) : nil
+        }
+    }
+
+    /// What a click or drag would take: images inside the drag box, or the
+    /// images under the pointer, smallest first so the one you aimed at leads.
+    var targetedImages: [(image: ScreenImage, rect: CGRect)] {
+        if let selection, selection.width >= 4 || selection.height >= 4 {
+            return localImages.filter { $0.rect.intersects(selection) }
+        }
+        guard let mouseLocation else { return [] }
+        return localImages.filter { $0.rect.contains(mouseLocation) }
+            .sorted { $0.rect.width * $0.rect.height < $1.rect.width * $1.rect.height }
+    }
+
+    private func updateCursor() {
+        (isExtracting ? NSCursor.pointingHand : NSCursor.crosshair).set()
+    }
+
     var pixelSelection: CGRect? {
         selection.map { SelectionGeometry.pixelRect(for: $0, viewHeight: bounds.height, scale: snapshot.scale) }
     }
 
     // MARK: Mouse
 
-    override func cursorUpdate(with event: NSEvent) { NSCursor.crosshair.set() }
+    override func cursorUpdate(with event: NSEvent) { updateCursor() }
 
     override func mouseMoved(with event: NSEvent) {
-        NSCursor.crosshair.set()
+        updateCursor()
         track(event)
     }
 
@@ -82,11 +117,18 @@ final class OverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        if isExtracting {
+            track(event)
+            let taken = targetedImages.map(\.image)
+            guard !taken.isEmpty else { return clearSelection() }
+            controller.finish(.images(taken))
+            return
+        }
         guard let selection, let pixels = pixelSelection, pixels.width >= 4, pixels.height >= 4 else {
             clearSelection()
             return
         }
-        controller.finish(OverlaySelection(snapshot: snapshot, rect: selection))
+        controller.finish(.region(OverlaySelection(snapshot: snapshot, rect: selection)))
     }
 
     override func rightMouseDown(with event: NSEvent) { controller.finish(nil) }
@@ -108,6 +150,11 @@ private final class OverlayDecorationView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         guard let overlay, let context = NSGraphicsContext.current?.cgContext else { return }
 
+        if overlay.isExtracting {
+            drawExtraction(overlay, in: context)
+            return
+        }
+
         context.setFillColor(NSColor.black.withAlphaComponent(0.35).cgColor)
         context.addRect(bounds)
         if let selection = overlay.selection, !selection.isEmpty { context.addRect(selection) }
@@ -122,6 +169,67 @@ private final class OverlayDecorationView: NSView {
 
         if let mouse = overlay.mouseLocation {
             drawLoupe(at: mouse, snapshot: overlay.snapshot, in: context)
+        }
+    }
+
+    // MARK: Extract mode
+
+    private func drawExtraction(_ overlay: OverlayView, in context: CGContext) {
+        context.setFillColor(NSColor.black.withAlphaComponent(0.45).cgColor)
+        context.fill(bounds)
+
+        let paper = AnnotationColor.paperColor
+        let targeted = overlay.targetedImages
+        let targetedRects = Set(targeted.map { "\($0.rect)" })
+        for entry in overlay.localImages where !targetedRects.contains("\(entry.rect)") {
+            context.setStrokeColor(paper.withAlphaComponent(0.35).cgColor)
+            context.setLineWidth(1)
+            context.stroke(entry.rect.insetBy(dx: 0.5, dy: 0.5))
+        }
+        // A click takes every layer under the pointer; outline the one it leads with most strongly.
+        for (index, entry) in targeted.enumerated() {
+            context.setFillColor(paper.withAlphaComponent(index == 0 ? 0.14 : 0.06).cgColor)
+            context.fill(entry.rect)
+            context.setStrokeColor(paper.withAlphaComponent(index == 0 ? 1 : 0.6).cgColor)
+            context.setLineWidth(index == 0 ? 2 : 1)
+            context.stroke(entry.rect.insetBy(dx: 1, dy: 1))
+        }
+        if let selection = overlay.selection, selection.width >= 4 || selection.height >= 4 {
+            context.setStrokeColor(paper.cgColor)
+            context.setLineWidth(1)
+            context.setLineDash(phase: 0, lengths: [4, 3])
+            context.stroke(selection.insetBy(dx: -0.5, dy: -0.5))
+            context.setLineDash(phase: 0, lengths: [])
+        }
+
+        switch overlay.imageState {
+        case .idle, .loading:
+            drawStatus("Finding images…", detail: nil)
+        case let .loaded(images) where images.isEmpty:
+            drawStatus("No images in view", detail: nil)
+        case let .loaded(images):
+            let count = images.count
+            drawStatus(targeted.isEmpty ? (count == 1 ? "1 image" : "\(count) images") : (targeted.count == 1 ? "1 image selected" : "\(targeted.count) images selected"), detail: nil)
+        case let .failed(error):
+            let failure = error as? LocalizedError
+            drawStatus(failure?.errorDescription ?? error.localizedDescription, detail: failure?.recoverySuggestion)
+        }
+    }
+
+    /// A pill at the top of the display for the extraction state and any fix the user needs to make.
+    private func drawStatus(_ title: String, detail: String?) {
+        let titleAttributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 13, weight: .semibold), .foregroundColor: AnnotationColor.paperColor]
+        let detailAttributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor(srgbRed: 0.612, green: 0.604, blue: 0.627, alpha: 1)]
+        let titleSize = (title as NSString).size(withAttributes: titleAttributes)
+        let detailBounds = detail.map { ($0 as NSString).boundingRect(with: CGSize(width: 420, height: 200), options: [.usesLineFragmentOrigin], attributes: detailAttributes).size } ?? .zero
+        let width = max(titleSize.width, ceil(detailBounds.width)) + 28
+        let height = titleSize.height + (detail == nil ? 0 : ceil(detailBounds.height) + 4) + 16
+        let pill = CGRect(x: bounds.midX - width / 2, y: bounds.maxY - 64 - height, width: width, height: height)
+        NSColor(srgbRed: 0.11, green: 0.11, blue: 0.122, alpha: 0.95).setFill()
+        NSBezierPath(roundedRect: pill, xRadius: 10, yRadius: 10).fill()
+        (title as NSString).draw(at: CGPoint(x: pill.minX + 14, y: pill.maxY - 8 - titleSize.height), withAttributes: titleAttributes)
+        if let detail {
+            (detail as NSString).draw(with: CGRect(x: pill.minX + 14, y: pill.minY + 8, width: 420, height: ceil(detailBounds.height)), options: [.usesLineFragmentOrigin], attributes: detailAttributes)
         }
     }
 

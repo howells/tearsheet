@@ -1,6 +1,15 @@
 import AppKit
 import TearsheetCore
 
+/// Where an image extracted from a web page came from.
+struct WebOrigin {
+    /// The original file's bytes; nil for a rendered copy.
+    let data: Data?
+    /// `hero@2x.webp`, or `hero (rendered copy).png`.
+    let filename: String
+    var isRenderedCopy: Bool { data == nil }
+}
+
 /// One capture from selection to dismissal. The thumbnail and the editor share
 /// it; annotations stay editable on it until the thumbnail goes away.
 final class CaptureItem {
@@ -9,6 +18,7 @@ final class CaptureItem {
     /// Pixels per point of the display the capture came from.
     let scale: CGFloat
     let createdAt = Date()
+    let web: WebOrigin?
 
     private(set) var document = AnnotationDocument()
     private(set) var image: CGImage
@@ -20,22 +30,37 @@ final class CaptureItem {
     /// Keeps the thumbnail on screen while an editor has the capture open.
     var isBeingEdited = false
 
-    var filename: String { CaptureFilename.name(for: createdAt) }
+    /// The name it saves under: the screenshot name, the web file's own name,
+    /// or that name as a PNG once annotated.
+    var filename: String {
+        guard let web else { return CaptureFilename.name(for: createdAt) }
+        guard isEdited, web.data != nil else { return web.filename }
+        return (web.filename as NSString).deletingPathExtension + ".png"
+    }
 
-    init(image: CGImage, scale: CGFloat) throws {
+    var isEdited: Bool { !document.annotations.isEmpty || document.crop != nil }
+
+    /// The web original's bytes while it is unannotated; Save writes these untouched.
+    var originalFileData: Data? { isEdited ? nil : web?.data }
+
+    init(image: CGImage, scale: CGFloat, web: WebOrigin? = nil) throws {
         original = image
         self.scale = scale
+        self.web = web
         self.image = image
         pngData = ImageCoding.png(image, scale: scale)
-        fileURL = try CaptureStore.folder(for: id).appending(path: CaptureFilename.name(for: createdAt))
-        try pngData.write(to: fileURL)
+        fileURL = try CaptureStore.folder(for: id).appending(path: web?.filename ?? CaptureFilename.name(for: createdAt))
+        try (web?.data ?? pngData).write(to: fileURL)
     }
 
     func apply(_ document: AnnotationDocument) throws {
         self.document = document
         image = AnnotationRenderer.render(base: original, document: document, scale: scale)
         pngData = ImageCoding.png(image, scale: scale)
-        try pngData.write(to: fileURL)
+        let url = fileURL.deletingLastPathComponent().appending(path: filename)
+        if url != fileURL { try? FileManager.default.removeItem(at: fileURL) }
+        fileURL = url
+        try (originalFileData ?? pngData).write(to: fileURL)
         onChange?()
     }
 
