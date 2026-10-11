@@ -98,7 +98,7 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
 
     override func draw(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
-        AnnotationColor.inkColor.setFill()
+        Darkroom.ink.setFill()
         bounds.fill()
 
         let hiddenID = lifted?.id
@@ -109,6 +109,16 @@ final class EditorCanvasView: NSView, NSTextFieldDelegate {
         }
 
         let frame = imageFrame
+        // The capture floats on the ink with a soft drop shadow and a hairline edge.
+        context.saveGState()
+        context.setShadow(offset: CGSize(width: 0, height: -24), blur: 60, color: NSColor.black.withAlphaComponent(0.5).cgColor)
+        context.setFillColor(Darkroom.ink.cgColor)
+        context.fill(frame)
+        context.restoreGState()
+        context.setStrokeColor(NSColor.white.withAlphaComponent(0.08).cgColor)
+        context.setLineWidth(0.5)
+        context.stroke(frame.insetBy(dx: -0.25, dy: -0.25))
+
         context.saveGState()
         context.translateBy(x: frame.minX, y: frame.minY)
         context.scaleBy(x: zoom, y: zoom)

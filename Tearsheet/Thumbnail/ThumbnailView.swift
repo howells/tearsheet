@@ -5,7 +5,7 @@ final class ThumbnailView: NSView, NSDraggingSource {
     private let item: CaptureItem
     private let imageLayer = CALayer()
     private let controls = NSView()
-    private let flashLabel = NSTextField(labelWithString: "")
+    private let flashLabel = DarkroomPill("")
     private var mouseDownPoint: CGPoint?
     private var swipeOffset: CGFloat = 0
 
@@ -15,11 +15,11 @@ final class ThumbnailView: NSView, NSDraggingSource {
         wantsLayer = true
         layer?.cornerRadius = 10
         layer?.masksToBounds = true
-        layer?.backgroundColor = NSColor(white: 0.12, alpha: 1).cgColor
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
+        layer?.backgroundColor = Darkroom.graphite.cgColor
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.22).cgColor
         layer?.borderWidth = 0.5
 
-        imageLayer.contentsGravity = .resizeAspect
+        imageLayer.contentsGravity = .resizeAspectFill
         imageLayer.contents = item.image
         layer?.addSublayer(imageLayer)
 
@@ -48,76 +48,57 @@ final class ThumbnailView: NSView, NSDraggingSource {
 
     private func buildControls() {
         controls.wantsLayer = true
-        controls.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.4).cgColor
+        controls.layer?.backgroundColor = Darkroom.ink.withAlphaComponent(0.42).cgColor
         controls.translatesAutoresizingMaskIntoConstraints = false
         controls.isHidden = true
         addSubview(controls)
 
-        let copy = ThumbnailButton.text("Copy", primary: true) { [weak self] in self?.panel?.copy() }
-        let save = ThumbnailButton.text("Save") { [weak self] in
+        let copy = DarkroomButton("Copy", style: .primary, pill: true, width: 76) { [weak self] in self?.panel?.copy() }
+        let save = DarkroomButton("Save", style: .glass, pill: true, width: 76) { [weak self] in
             self?.panel?.save(atOneX: NSEvent.modifierFlags.contains(.option))
         }
         save.toolTip = "Hold ⌥ to save at 1×"
-        let centre = NSStackView(views: [copy, save])
-        centre.orientation = .horizontal
-        centre.spacing = 6
-        centre.translatesAutoresizingMaskIntoConstraints = false
+        let close = DarkroomIconButton(.close, label: "Close") { [weak self] in self?.panel?.dismiss() }
+        let annotate = DarkroomIconButton(.pencil, label: "Annotate") { [weak self] in self?.panel?.annotate() }
 
-        let close = ThumbnailButton.symbol("xmark", label: "Close") { [weak self] in self?.panel?.dismiss() }
-        let annotate = ThumbnailButton.symbol("pencil.tip", label: "Annotate") { [weak self] in self?.panel?.annotate() }
-
-        for view in [centre, close, annotate] { controls.addSubview(view) }
+        for view in [copy, save, close, annotate] as [NSView] { controls.addSubview(view) }
         NSLayoutConstraint.activate([
             controls.leadingAnchor.constraint(equalTo: leadingAnchor),
             controls.trailingAnchor.constraint(equalTo: trailingAnchor),
             controls.topAnchor.constraint(equalTo: topAnchor),
             controls.bottomAnchor.constraint(equalTo: bottomAnchor),
-            centre.centerXAnchor.constraint(equalTo: controls.centerXAnchor),
-            centre.centerYAnchor.constraint(equalTo: controls.centerYAnchor),
-            copy.widthAnchor.constraint(equalToConstant: 64),
-            save.widthAnchor.constraint(equalToConstant: 64),
-            close.leadingAnchor.constraint(equalTo: controls.leadingAnchor, constant: 6),
-            close.topAnchor.constraint(equalTo: controls.topAnchor, constant: 6),
-            annotate.trailingAnchor.constraint(equalTo: controls.trailingAnchor, constant: -6),
-            annotate.topAnchor.constraint(equalTo: controls.topAnchor, constant: 6),
+            copy.trailingAnchor.constraint(equalTo: controls.centerXAnchor, constant: -4),
+            copy.centerYAnchor.constraint(equalTo: controls.centerYAnchor),
+            save.leadingAnchor.constraint(equalTo: controls.centerXAnchor, constant: 4),
+            save.centerYAnchor.constraint(equalTo: controls.centerYAnchor),
+            close.leadingAnchor.constraint(equalTo: controls.leadingAnchor),
+            close.topAnchor.constraint(equalTo: controls.topAnchor),
+            annotate.trailingAnchor.constraint(equalTo: controls.trailingAnchor),
+            annotate.topAnchor.constraint(equalTo: controls.topAnchor),
         ])
     }
 
     /// Marks an extracted image that is a screenshot of the page, not the original file.
     private func buildRenderedCopyBadge() {
-        let badge = NSTextField(labelWithString: "Rendered copy")
-        badge.font = .systemFont(ofSize: 11, weight: .semibold)
-        badge.textColor = AnnotationColor.paperColor
-        badge.wantsLayer = true
-        badge.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
-        badge.layer?.cornerRadius = 4
-        badge.translatesAutoresizingMaskIntoConstraints = false
+        let badge = DarkroomPill("Rendered copy")
         addSubview(badge)
         NSLayoutConstraint.activate([
-            badge.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
-            badge.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            badge.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            badge.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8),
         ])
     }
 
     private func buildFlashLabel() {
-        flashLabel.font = .systemFont(ofSize: 13, weight: .semibold)
-        flashLabel.textColor = .white
-        flashLabel.alignment = .center
-        flashLabel.wantsLayer = true
-        flashLabel.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
-        flashLabel.layer?.cornerRadius = 6
-        flashLabel.translatesAutoresizingMaskIntoConstraints = false
         flashLabel.isHidden = true
         addSubview(flashLabel)
         NSLayoutConstraint.activate([
             flashLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             flashLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            flashLabel.widthAnchor.constraint(equalToConstant: 90),
         ])
     }
 
     func flash(_ message: String) {
-        flashLabel.stringValue = message
+        flashLabel.text = message
         flashLabel.isHidden = false
         controls.isHidden = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
@@ -197,44 +178,4 @@ final class ThumbnailView: NSView, NSDraggingSource {
             break
         }
     }
-}
-
-/// A button that works on the first click in a panel that never becomes key.
-private final class ThumbnailButton: NSButton {
-    private var handler: (() -> Void)?
-
-    static func text(_ title: String, primary: Bool = false, handler: @escaping () -> Void) -> ThumbnailButton {
-        let button = ThumbnailButton(title: title, target: nil, action: nil)
-        button.bezelStyle = .glass
-        button.controlSize = .regular
-        if primary {
-            button.bezelColor = AnnotationColor.paperColor
-            button.attributedTitle = NSAttributedString(string: title, attributes: [
-                .foregroundColor: AnnotationColor.inkColor,
-                .font: NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold),
-            ])
-        }
-        button.configure(handler)
-        return button
-    }
-
-    static func symbol(_ name: String, label: String, handler: @escaping () -> Void) -> ThumbnailButton {
-        let button = ThumbnailButton(image: NSImage(systemSymbolName: name, accessibilityDescription: label)!, target: nil, action: nil)
-        button.bezelStyle = .glass
-        button.controlSize = .small
-        button.toolTip = label
-        button.configure(handler)
-        return button
-    }
-
-    private func configure(_ handler: @escaping () -> Void) {
-        self.handler = handler
-        target = self
-        action = #selector(fire)
-        translatesAutoresizingMaskIntoConstraints = false
-    }
-
-    @objc private func fire() { handler?() }
-
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

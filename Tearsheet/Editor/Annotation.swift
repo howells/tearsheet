@@ -54,8 +54,8 @@ enum AnnotationColor: Int, CaseIterable, Sendable {
         }
     }
 
-    static let paperColor = NSColor(srgbRed: 0.957, green: 0.949, blue: 0.933, alpha: 1)
-    static let inkColor = NSColor(srgbRed: 0.055, green: 0.055, blue: 0.063, alpha: 1)
+    static let paperColor = Darkroom.paper
+    static let inkColor = Darkroom.ink
 
     /// Light inks (amber, paper) take a dark halo and dark lettering; the rest take paper.
     private var isLight: Bool { self == .amber || self == .paper }

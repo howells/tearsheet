@@ -74,7 +74,7 @@ final class OverlayController {
         // overlay is a non-activating panel, which takes keyboard focus anyway.
         let mouseScreen = NSScreen.underMouse
         (windows.first { $0.screen == mouseScreen } ?? windows.first)?.makeKey()
-        NSCursor.crosshair.set()
+        (mode == .extract ? NSCursor.pointingHand : OverlayView.crosshair).set()
 
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
             self?.handleKey(event)

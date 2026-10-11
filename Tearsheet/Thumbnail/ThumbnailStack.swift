@@ -8,7 +8,7 @@ final class ThumbnailStack {
     private var panels: [ThumbnailPanel] = []
     private var screen: NSScreen?
     private let limit = 5
-    private let margin: CGFloat = 16
+    private let margin: CGFloat = 20
     private let spacing: CGFloat = 12
 
     var windowNumbers: Set<Int> { Set(panels.map(\.windowNumber)) }

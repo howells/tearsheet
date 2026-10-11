@@ -16,44 +16,39 @@ final class EditorRegistry {
     }
 }
 
-final class EditorWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate {
+final class EditorWindowController: NSWindowController, NSWindowDelegate {
     var onClose: (() -> Void)?
 
     private let item: CaptureItem
     private let canvas: EditorCanvasView
+    private let toolbar = EditorToolbarView()
     /// Set once the edits have been applied (or deliberately thrown away), so closing doesn't apply them again.
     private var isSettled = false
-
-    private let toolPicker = NSSegmentedControl()
-    private let colorPicker = NSSegmentedControl()
-    private let sizePicker = NSSegmentedControl()
-    private let stylePicker = NSSegmentedControl()
 
     init(item: CaptureItem) {
         self.item = item
         canvas = EditorCanvasView(base: item.original, scale: item.scale, document: item.document)
-        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         super.init(window: window)
 
         window.title = item.filename
         window.delegate = self
         window.isReleasedWhenClosed = false
-        window.toolbarStyle = .unified
         // Graphite chrome whatever the system appearance, so the capture stays the brightest thing on screen.
         window.appearance = NSAppearance(named: .darkAqua)
-        // The filename would push the colour and size pickers into the overflow menu.
+        window.backgroundColor = Darkroom.graphite
         window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        // An empty unified toolbar gives the title bar the mockup's height and centres
+        // the window controls in it; the tools are drawn by EditorToolbarView beneath.
+        window.toolbar = NSToolbar(identifier: "editor")
+        window.toolbarStyle = .unified
         window.contentView = buildContent()
-        let toolbar = NSToolbar(identifier: "editor")
-        toolbar.delegate = self
-        toolbar.displayMode = .iconOnly
-        toolbar.allowsUserCustomization = false
-        window.toolbar = toolbar
 
         canvas.onCommit = { [weak self] in self?.copyAndClose(nil) }
         canvas.onCancel = { [weak self] in self?.discardAndClose() }
         canvas.onStateChange = { [weak self] in self?.syncControls() }
-        configurePickers()
+        configureToolbar()
         size(window)
     }
 
@@ -114,44 +109,28 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func buildContent() -> NSView {
         let container = NSView()
-        canvas.translatesAutoresizingMaskIntoConstraints = false
-
-        let dimensions = NSTextField(labelWithString: "\(item.original.width) × \(item.original.height)")
-        dimensions.textColor = .secondaryLabelColor
-        dimensions.font = .monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
-        dimensions.toolTip = "Pixels"
-
-        let save = NSButton(title: "Save", target: self, action: #selector(saveCapture(_:)))
-        save.toolTip = "Save (⌘S, hold ⌥ for 1×)"
-        let copy = NSButton(title: "Copy", target: self, action: #selector(copyAndClose(_:)))
-        copy.toolTip = "Copy and close (⌘C or ↩)"
-        copy.bezelColor = AnnotationColor.paperColor
-        copy.attributedTitle = NSAttributedString(string: "Copy", attributes: [
-            .foregroundColor: AnnotationColor.inkColor,
-            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold),
-        ])
-        for button in [save, copy] {
-            button.controlSize = .large
-            button.widthAnchor.constraint(greaterThanOrEqualToConstant: 84).isActive = true
+        let bar = EditorActionBar(
+            pixelSize: CGSize(width: item.original.width, height: item.original.height),
+            save: { [weak self] in self?.saveCapture(nil) },
+            copy: { [weak self] in self?.copyAndClose(nil) }
+        )
+        for view in [toolbar, canvas, bar] as [NSView] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(view)
         }
-
-        let bar = NSStackView(views: [dimensions, NSView(), save, copy])
-        bar.orientation = .horizontal
-        bar.spacing = 10
-        bar.edgeInsets = NSEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
-        bar.translatesAutoresizingMaskIntoConstraints = false
-
-        container.addSubview(canvas)
-        container.addSubview(bar)
         NSLayoutConstraint.activate([
-            canvas.topAnchor.constraint(equalTo: container.topAnchor),
+            toolbar.topAnchor.constraint(equalTo: container.topAnchor),
+            toolbar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            toolbar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            toolbar.heightAnchor.constraint(equalToConstant: 56),
+            canvas.topAnchor.constraint(equalTo: toolbar.bottomAnchor),
             canvas.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             canvas.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             canvas.bottomAnchor.constraint(equalTo: bar.topAnchor),
             bar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             bar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             bar.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            bar.heightAnchor.constraint(equalToConstant: 56),
+            bar.heightAnchor.constraint(equalToConstant: 60),
         ])
         return container
     }
@@ -159,140 +138,35 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func size(_ window: NSWindow) {
         guard let visible = (NSScreen.underMouse ?? NSScreen.main)?.visibleFrame else { return }
         let image = CGSize(width: CGFloat(item.original.width) / item.scale, height: CGFloat(item.original.height) / item.scale)
+        // The capture floats on the ink canvas with room around it, as in the mockup.
         let content = CGSize(
-            width: min(max(image.width + 48, 720), visible.width * 0.9),
-            height: min(max(image.height + 48 + 56, 460), visible.height * 0.85)
+            width: min(max(image.width + 160, 760), visible.width * 0.9),
+            height: min(max(image.height + 100 + 56 + 60, 480), visible.height * 0.88)
         )
-        window.contentMinSize = CGSize(width: 600, height: 360)
+        window.contentMinSize = CGSize(width: 760, height: 400)
         window.setContentSize(content)
         window.setFrameOrigin(CGPoint(x: visible.midX - window.frame.width / 2, y: visible.midY - window.frame.height / 2))
     }
 
     // MARK: Toolbar
 
-    private func configurePickers() {
-        let tools = AnnotationTool.allCases
-        toolPicker.segmentCount = tools.count
-        for (index, tool) in tools.enumerated() {
-            toolPicker.setImage(NSImage(systemSymbolName: tool.symbol, accessibilityDescription: tool.label), forSegment: index)
-            toolPicker.setToolTip("\(tool.label) (\(tool.key.uppercased()))", forSegment: index)
-        }
-
-        let colors = AnnotationColor.allCases
-        colorPicker.segmentCount = colors.count
-        for (index, color) in colors.enumerated() {
-            colorPicker.setImage(Swatch.color(color.nsColor), forSegment: index)
-            colorPicker.setToolTip("Colour \(index + 1)", forSegment: index)
-        }
-
-        sizePicker.segmentCount = StrokeSize.allCases.count
-        for size in StrokeSize.allCases {
-            sizePicker.setImage(Swatch.stroke(width: size.stroke), forSegment: size.rawValue)
-        }
-        sizePicker.setToolTip("Small", forSegment: 0)
-        sizePicker.setToolTip("Medium", forSegment: 1)
-        sizePicker.setToolTip("Large", forSegment: 2)
-
-        stylePicker.segmentCount = 2
-        stylePicker.setLabel("Outline", forSegment: 0)
-        stylePicker.setLabel("Box", forSegment: 1)
-        stylePicker.setToolTip("Text with an outline", forSegment: 0)
-        stylePicker.setToolTip("Text on a filled box", forSegment: 1)
-
-        for picker in [toolPicker, colorPicker, sizePicker, stylePicker] {
-            picker.trackingMode = .selectOne
-            picker.target = self
-            picker.action = #selector(pickerChanged(_:))
-            picker.segmentStyle = .separated
-            picker.selectedSegmentBezelColor = AnnotationColor.paperColor
-        }
+    private func configureToolbar() {
+        toolbar.onTool = { [weak self] in self?.canvas.tool = $0; self?.refocus() }
+        toolbar.onColor = { [weak self] in self?.canvas.color = $0; self?.refocus() }
+        toolbar.onSize = { [weak self] in self?.canvas.size = $0; self?.refocus() }
+        toolbar.onTextStyle = { [weak self] in self?.canvas.textStyle = $0; self?.refocus() }
         syncControls()
     }
 
-    @objc private func pickerChanged(_ sender: NSSegmentedControl) {
-        switch sender {
-        case toolPicker: canvas.tool = AnnotationTool.allCases[sender.selectedSegment]
-        case colorPicker: canvas.color = AnnotationColor(rawValue: sender.selectedSegment) ?? .red
-        case sizePicker: canvas.size = StrokeSize(rawValue: sender.selectedSegment) ?? .medium
-        case stylePicker: canvas.textStyle = sender.selectedSegment == 0 ? .outline : .background
-        default: break
-        }
+    private func refocus() {
+        syncControls()
         window?.makeFirstResponder(canvas)
     }
 
     private func syncControls() {
-        toolPicker.selectedSegment = AnnotationTool.allCases.firstIndex(of: canvas.tool) ?? 0
-        colorPicker.selectedSegment = canvas.color.rawValue
-        sizePicker.selectedSegment = canvas.size.rawValue
-        stylePicker.selectedSegment = canvas.textStyle == .outline ? 0 : 1
-    }
-
-    private static let items: [NSToolbarItem.Identifier: String] = [
-        .init("tools"): "Tools", .init("colors"): "Colour", .init("sizes"): "Size", .init("style"): "Text Style",
-    ]
-
-    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.init("tools"), .space, .init("colors"), .init("sizes"), .init("style"), .flexibleSpace]
-    }
-
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        toolbarDefaultItemIdentifiers(toolbar)
-    }
-
-    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        let view: NSView? = switch identifier.rawValue {
-        case "tools": toolPicker
-        case "colors": colorPicker
-        case "sizes": sizePicker
-        case "style": stylePicker
-        default: nil
-        }
-        guard let view else { return nil }
-        let item = NSToolbarItem(itemIdentifier: identifier)
-        item.view = view
-        item.label = Self.items[identifier] ?? ""
-        return item
-    }
-}
-
-private enum Swatch {
-    static func color(_ color: NSColor) -> NSImage {
-        image(size: 16) { rect in
-            color.setFill()
-            let circle = NSBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5))
-            circle.fill()
-            // A light rim keeps graphite visible on the dark toolbar.
-            NSColor.white.withAlphaComponent(color == AnnotationColor.graphite.nsColor ? 0.35 : 0.15).setStroke()
-            circle.lineWidth = 1
-            circle.stroke()
-        }
-    }
-
-    /// A short sample of the pen at this width, so the control shows what it draws.
-    static func stroke(width: CGFloat) -> NSImage {
-        let template = image(size: 16) { rect in
-            NSColor.black.setStroke()
-            let line = NSBezierPath()
-            line.move(to: CGPoint(x: rect.minX + 1 + width / 2, y: rect.midY))
-            line.line(to: CGPoint(x: rect.maxX - 1 - width / 2, y: rect.midY))
-            line.lineWidth = width
-            line.lineCapStyle = .round
-            line.stroke()
-        }
-        template.isTemplate = true
-        return template
-    }
-
-    private static func image(size: CGFloat, draw: (CGRect) -> Void) -> NSImage {
-        let scale: CGFloat = 2
-        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size * scale), pixelsHigh: Int(size * scale), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-        rep.size = CGSize(width: size, height: size)
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-        draw(CGRect(x: 0, y: 0, width: size, height: size))
-        NSGraphicsContext.restoreGraphicsState()
-        let image = NSImage(size: rep.size)
-        image.addRepresentation(rep)
-        return image
+        toolbar.tool = canvas.tool
+        toolbar.color = canvas.color
+        toolbar.size = canvas.size
+        toolbar.textStyle = canvas.textStyle
     }
 }

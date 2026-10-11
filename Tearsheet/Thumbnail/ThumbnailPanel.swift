@@ -35,12 +35,11 @@ final class ThumbnailPanel: NSPanel {
 
     override var canBecomeKey: Bool { false }
 
-    /// Fits the capture into 240 × 180 points, never smaller than 160 × 100 so the buttons fit.
+    /// Always 240 points wide, as in the mockup; the height follows the capture
+    /// between 96 and 180 points, and the image fills the card.
     static func size(for item: CaptureItem) -> CGSize {
-        let width = CGFloat(item.image.width) / item.scale
-        let height = CGFloat(item.image.height) / item.scale
-        let factor = min(240 / width, 180 / height, 1)
-        return CGSize(width: max(160, (width * factor).rounded()), height: max(100, (height * factor).rounded()))
+        let aspect = CGFloat(item.image.height) / max(CGFloat(item.image.width), 1)
+        return CGSize(width: 240, height: min(180, max(96, (240 * aspect).rounded())))
     }
 
     private func itemChanged() {

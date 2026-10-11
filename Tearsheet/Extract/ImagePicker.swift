@@ -34,19 +34,10 @@ final class ImagePicker: NSObject {
             }
         }
 
-        let takeAll = NSButton(title: "Copy All \(candidates.count)", target: self, action: #selector(pickAll))
-        takeAll.bezelStyle = .glass
-        takeAll.controlSize = .large
-        takeAll.bezelColor = AnnotationColor.paperColor
-        takeAll.attributedTitle = NSAttributedString(string: takeAll.title, attributes: [
-            .foregroundColor: AnnotationColor.inkColor,
-            .font: NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold),
-        ])
-        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancel))
-        cancel.bezelStyle = .glass
-        cancel.controlSize = .large
+        let takeAll = DarkroomButton("Copy All \(candidates.count)", style: .primary) { [weak self] in self?.pickAll() }
+        let cancel = DarkroomButton("Cancel", style: .secondary) { [weak self] in self?.cancel() }
         let buttons = NSStackView(views: [NSView(), cancel, takeAll])
-        buttons.spacing = 10
+        buttons.spacing = 8
 
         let stack = NSStackView(views: [grid, buttons])
         stack.orientation = .vertical
@@ -55,12 +46,12 @@ final class ImagePicker: NSObject {
         stack.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        let background = NSVisualEffectView()
-        background.material = .hudWindow
-        background.state = .active
-        background.blendingMode = .behindWindow
+        let background = NSView()
         background.wantsLayer = true
-        background.layer?.cornerRadius = 14
+        background.layer?.backgroundColor = Darkroom.graphite.cgColor
+        background.layer?.borderColor = NSColor.white.withAlphaComponent(0.12).cgColor
+        background.layer?.borderWidth = 0.5
+        background.layer?.cornerRadius = 16
         background.layer?.masksToBounds = true
         background.addSubview(stack)
         NSLayoutConstraint.activate([
@@ -96,8 +87,8 @@ final class ImagePicker: NSObject {
     }
 
     @objc private func pick(_ sender: NSButton) { finish([candidates[sender.tag]]) }
-    @objc private func pickAll() { finish(candidates) }
-    @objc private func cancel() { finish(nil) }
+    private func pickAll() { finish(candidates) }
+    private func cancel() { finish(nil) }
 
     private func finish(_ result: [ScreenImage]?) {
         guard let continuation else { return }
@@ -139,15 +130,15 @@ private final class PickerTile: NSButton {
 
         picture.imageScaling = .scaleProportionallyUpOrDown
         picture.wantsLayer = true
-        picture.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
-        picture.layer?.cornerRadius = 6
+        picture.layer?.backgroundColor = Darkroom.ink.cgColor
+        picture.layer?.cornerRadius = 10
+        picture.layer?.borderColor = NSColor.white.withAlphaComponent(0.08).cgColor
+        picture.layer?.borderWidth = 0.5
         picture.layer?.masksToBounds = true
         picture.translatesAutoresizingMaskIntoConstraints = false
         if let preview { picture.image = NSImage(cgImage: preview, size: .zero) }
 
-        let label = NSTextField(labelWithString: Self.caption(for: candidate))
-        label.font = .systemFont(ofSize: 11)
-        label.textColor = .secondaryLabelColor
+        let label = Darkroom.label(Self.caption(for: candidate), size: 11, color: Darkroom.muted)
         label.lineBreakMode = .byTruncatingMiddle
         label.alignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
