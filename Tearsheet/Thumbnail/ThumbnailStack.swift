@@ -1,8 +1,8 @@
 import AppKit
 
-/// Floating thumbnails in the bottom-left corner of the screen under the cursor.
-/// At rest they fan out like a hand of prints, newest in front, as in the film;
-/// pointing at the pile stands them up in a column, newest at the bottom.
+/// Floating thumbnails in a corner of the screen under the cursor, bottom left
+/// unless Settings says otherwise. At rest they fan out from the corner, newest
+/// in front; pointing at the pile stands them up in a column along the side.
 final class ThumbnailStack {
     var onAnnotate: ((CaptureItem) -> Void)?
 
@@ -31,20 +31,22 @@ final class ThumbnailStack {
         for (newer, older) in zip(panels, panels.dropFirst()) { older.order(.below, relativeTo: newer.windowNumber) }
     }
 
-    /// Thumbnails arrive from the left edge and leave the same way.
+    /// Thumbnails arrive from the nearer side of the screen and leave the same way.
     private let travel: CGFloat = 24
 
-    func dismiss(_ panel: ThumbnailPanel, slidingLeft: Bool = false) {
+    func dismiss(_ panel: ThumbnailPanel, swiped: Bool = false) {
         guard let index = panels.firstIndex(where: { $0 === panel }) else { return }
         panels.remove(at: index)
         panel.stopTimer()
         // A swipe throws the card off screen; otherwise it backs out the way it came in.
-        let distance = Darkroom.Motion.reduced ? 0 : slidingLeft ? panel.frame.maxX - (screen?.visibleFrame.minX ?? 0) : travel
+        let visible = (screen ?? NSScreen.main)?.visibleFrame ?? .zero
+        let offScreen = panel.edgeDirection < 0 ? panel.frame.maxX - visible.minX : visible.maxX - panel.frame.minX
+        let distance = Darkroom.Motion.reduced ? 0 : swiped ? offScreen : travel
         panel.pose.x += panel.nudge
         panel.nudge = 0
-        panel.target.x = panel.pose.x - distance
+        panel.target.x = panel.pose.x + panel.edgeDirection * distance
         move(panel)
-        Darkroom.Motion.animate(slidingLeft ? 0.25 : 0.2, Darkroom.Motion.easeOut, {
+        Darkroom.Motion.animate(swiped ? 0.25 : 0.2, Darkroom.Motion.easeOut, {
             panel.animator().alphaValue = 0
         }, completion: { [springs] in
             springs.stop(panel)
@@ -59,8 +61,8 @@ final class ThumbnailStack {
         for (panel, target) in zip(panels, poses(standing: isStanding, in: visible)) {
             panel.target = target
             if panel === appearing {
-                // Lands level from the left edge and swings into its place in the fan.
-                panel.pose = CardPose(x: target.x - (Darkroom.Motion.reduced ? 0 : travel), y: target.y, angle: 0)
+                // Lands level from the screen edge, in front of the pile.
+                panel.pose = CardPose(x: target.x + panel.edgeDirection * (Darkroom.Motion.reduced ? 0 : travel), y: target.y, angle: 0)
                 panel.apply()
                 panel.alphaValue = 0
                 Darkroom.Motion.animate(0.3, Darkroom.Motion.easeOut) { panel.animator().alphaValue = 1 }
@@ -82,35 +84,53 @@ final class ThumbnailStack {
 
     // MARK: Fan and column
 
-    /// The film's fan, from tilted left to tilted right with the middle lifted,
-    /// drawn closer together so five cards still sit near the corner.
+    /// The corner chosen in Settings, read afresh so a change moves the pile at once.
+    var corner: ScreenCorner { Preferences.thumbnailCorner }
+
+    /// At rest the pile is tucked into the corner: the newest card level in front,
+    /// each older one behind it turned a little further away from the screen edge,
+    /// so the pile opens like a fan pinned at the corner. Standing, the cards line
+    /// up along the side of the screen, the newest in the corner.
     private func poses(standing: Bool, in visible: CGRect) -> [CardPose] {
-        let left = visible.minX + margin
-        guard !standing, panels.count > 1, let newest = panels.first?.cardSize else {
-            var y = visible.minY + margin
-            return panels.map { panel in
-                let size = panel.cardSize
-                defer { y += size.height + spacing }
-                return CardPose(x: left + size.width / 2, y: y + size.height / 2)
-            }
-        }
-        let last = CGFloat(panels.count - 1)
-        let step = min(120, 300 / last)
-        // Raised a little so a tilted corner clears the bottom of the screen.
-        let base = visible.minY + margin + 12 + newest.height / 2
-        return panels.enumerated().map { index, panel in
-            let t = CGFloat(index) / last
-            return CardPose(
-                x: left + panel.cardSize.width / 2 + CGFloat(index) * step,
-                y: base + sin(t * .pi) * 30,
-                angle: 9 - 17 * t
+        let corner = self.corner
+        let inset = visible.insetBy(dx: margin, dy: margin)
+        // The centre that puts a box of this size snug in the corner.
+        func tucked(_ size: CGSize) -> CGPoint {
+            CGPoint(
+                x: corner.isLeft ? inset.minX + size.width / 2 : inset.maxX - size.width / 2,
+                y: corner.isBottom ? inset.minY + size.height / 2 : inset.maxY - size.height / 2
             )
         }
+        guard !standing, panels.count > 1 else {
+            var offset: CGFloat = 0
+            return panels.map { panel in
+                let size = panel.cardSize
+                defer { offset += size.height + spacing }
+                let centre = tucked(size)
+                return CardPose(x: centre.x, y: centre.y + (corner.isBottom ? offset : -offset))
+            }
+        }
+        let step = min(12, 30 / CGFloat(panels.count - 1))
+        // Anticlockwise lifts the far end of a card in the bottom-left corner;
+        // the other corners mirror it.
+        let turn: CGFloat = corner.isLeft == corner.isBottom ? 1 : -1
+        return panels.enumerated().map { index, panel in
+            let angle = turn * step * CGFloat(index)
+            let centre = tucked(Self.extent(of: panel.cardSize, turnedBy: angle))
+            return CardPose(x: centre.x, y: centre.y, angle: angle)
+        }
+    }
+
+    /// The upright box a card fills once turned.
+    private static func extent(of size: CGSize, turnedBy degrees: CGFloat) -> CGSize {
+        let radians = degrees * .pi / 180
+        let cosine = abs(cos(radians)), sine = abs(sin(radians))
+        return CGSize(width: size.width * cosine + size.height * sine, height: size.width * sine + size.height * cosine)
     }
 
     private func footprint(_ poses: [CardPose]) -> CGRect {
         zip(panels, poses).reduce(CGRect.null) { area, pair in
-            let size = pair.0.cardSize
+            let size = Self.extent(of: pair.0.cardSize, turnedBy: pair.1.angle)
             return area.union(CGRect(x: pair.1.x - size.width / 2, y: pair.1.y - size.height / 2, width: size.width, height: size.height))
         }
     }

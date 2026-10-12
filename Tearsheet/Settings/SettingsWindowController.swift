@@ -39,6 +39,7 @@ private extension Color {
 
 private struct SettingsView: View {
     @State private var folder = Preferences.saveFolder
+    @State private var corner = Preferences.thumbnailCorner
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var launchError: String?
     @State private var hasPermission = ScreenRecordingPermission.isGranted
@@ -65,6 +66,13 @@ private struct SettingsView: View {
                             .foregroundStyle(Color.muted)
                             TintedButton("Choose…", action: chooseFolder)
                         }
+                    }
+                    Hairline()
+                    Row(height: 52, trailingPadding: 6) {
+                        Text("Thumbnails")
+                    } trailing: {
+                        CornerMenu(corner: $corner)
+                            .onChange(of: corner) { _, corner in Preferences.thumbnailCorner = corner }
                     }
                     Hairline()
                     Row(height: 52) {
@@ -241,17 +249,50 @@ private struct TintedButton: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.paper)
-                .padding(.horizontal, 12)
-                .frame(height: 28)
-                .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.1)))
-                .frame(height: 44)
-                .contentShape(Rectangle())
+        Button(action: action) { TintedLabel { Text(title) } }
+            .buttonStyle(.plain)
+    }
+}
+
+/// The face shared by tinted buttons and menus: a quiet 28-point plate in a 44-point target.
+private struct TintedLabel<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        content
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(Color.paper)
+            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .background(RoundedRectangle(cornerRadius: 7).fill(Color.white.opacity(0.1)))
+            .frame(height: 44)
+            .contentShape(Rectangle())
+    }
+}
+
+/// Picks the corner the thumbnails gather in.
+private struct CornerMenu: View {
+    @Binding var corner: ScreenCorner
+
+    var body: some View {
+        Menu {
+            Picker("Thumbnails", selection: $corner) {
+                ForEach(ScreenCorner.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } label: {
+            TintedLabel {
+                HStack(spacing: 6) {
+                    Text(corner.title)
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .semibold))
+                }
+            }
         }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
         .buttonStyle(.plain)
+        .fixedSize()
     }
 }
 

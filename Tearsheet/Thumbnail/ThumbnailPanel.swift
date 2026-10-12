@@ -14,11 +14,12 @@ final class ThumbnailPanel: NSPanel {
     private var timer: Timer?
     private let lifetime: TimeInterval = 8
 
-    /// Room around the card for it to tilt in, as it does in the fan. The window is
-    /// clear there, so clicks fall through to whatever is underneath.
+    /// Room for the shadow. The window is a square wide enough for the card at any
+    /// tilt; it is clear around the card, so clicks fall through to whatever is underneath.
     static let padding: CGFloat = 20
 
     /// Where the card is, where the stack wants it, and how fast it is getting there.
+    /// The card sits level in the window and turns about its centre.
     var pose = CardPose()
     var target = CardPose()
     var velocity = CardPose()
@@ -73,13 +74,13 @@ final class ThumbnailPanel: NSPanel {
     /// Puts the window and the card where `pose` says.
     func apply() {
         let size = cardSize
-        let pad = ThumbnailPanel.padding
-        setFrame(CGRect(x: pose.x + nudge - size.width / 2 - pad, y: pose.y - size.height / 2 - pad, width: size.width + 2 * pad, height: size.height + 2 * pad), display: false)
-        if thumbnail.frame.size != size {
+        let side = (hypot(size.width, size.height) + 2 * ThumbnailPanel.padding).rounded(.up)
+        setFrame(CGRect(x: pose.x + nudge - side / 2, y: pose.y - side / 2, width: side, height: side), display: false)
+        if thumbnail.bounds.size != size {
             // A tilted view's frame is its bounding box, so size it level.
             let angle = thumbnail.frameCenterRotation
             thumbnail.frameCenterRotation = 0
-            thumbnail.frame = CGRect(x: pad, y: pad, width: size.width, height: size.height)
+            thumbnail.frame = CGRect(x: (side - size.width) / 2, y: (side - size.height) / 2, width: size.width, height: size.height)
             thumbnail.frameCenterRotation = angle
         }
         if thumbnail.frameCenterRotation != pose.angle {
@@ -116,7 +117,9 @@ final class ThumbnailPanel: NSPanel {
     func copy() { stack.copy(self) }
     func save(atOneX: Bool) { stack.save(self, atOneX: atOneX) }
     func annotate() { stack.annotate(self) }
-    func dismiss(slidingLeft: Bool = false) { stack.dismiss(self, slidingLeft: slidingLeft) }
+    func dismiss(swiped: Bool = false) { stack.dismiss(self, swiped: swiped) }
+    /// −1 when the thumbnails sit on the left of the screen, 1 on the right.
+    var edgeDirection: CGFloat { stack.corner.isLeft ? -1 : 1 }
     func flash(_ message: String) { thumbnail.flash(message) }
 
     /// Follows the fingers during a swipe; `settleSwipe` springs back home.

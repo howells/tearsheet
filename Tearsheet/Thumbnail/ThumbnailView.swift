@@ -199,10 +199,12 @@ final class ThumbnailView: NSView, NSDraggingSource {
         case .changed:
             // Positive means the fingers moved right, whichever scrolling direction is set.
             swipeOffset += event.isDirectionInvertedFromDevice ? event.scrollingDeltaX : -event.scrollingDeltaX
-            panel.swipe(to: min(swipeOffset, 12))
+            // Free toward the screen edge, a little give the other way.
+            let outward = swipeOffset * panel.edgeDirection
+            panel.swipe(to: max(outward, -12) * panel.edgeDirection)
         case .ended, .cancelled:
-            if swipeOffset < -60 {
-                panel.dismiss(slidingLeft: true)
+            if swipeOffset * panel.edgeDirection > 60 {
+                panel.dismiss(swiped: true)
             } else {
                 panel.settleSwipe()
             }
