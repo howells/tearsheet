@@ -12,8 +12,10 @@
   <meta name="theme-color" content="#0e0e10">
   <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="preload" href="/poster.jpg" as="image">
+  <link rel="preload" href="/icon-print.png" as="image">
+  <link rel="preload" href="/icon-ground.png" as="image">
   <link rel="stylesheet" href="/app.css">
+  <noscript><style>.film[data-waiting] *{opacity:1!important}.chapters,.proof,.proof li{opacity:1!important;translate:none!important;clip-path:none!important}</style></noscript>
 </head>
 <body class="min-h-dvh bg-ink font-sans text-body text-paper">
   <svg width="0" height="0" class="absolute" aria-hidden="true">
@@ -24,7 +26,7 @@
     </defs>
   </svg>
 
-  <header class="mx-auto flex max-w-5xl items-center justify-between px-6 pt-6">
+  <header class="intro mx-auto flex max-w-5xl items-center justify-between px-6 pt-6" style="--d:0ms">
     <a href="/" class="flex min-h-11 items-center gap-2.5 font-semibold">
       <img src="/icon.png" alt="" width="28" height="28" class="size-7">
       Tearsheet
@@ -34,16 +36,20 @@
 
   <main class="mx-auto max-w-5xl px-6">
     <section class="pt-20 pb-16 text-center sm:pt-28">
-      <img src="/icon.png" alt="" width="112" height="112" class="mx-auto mb-8 size-24 drop-shadow-[0_18px_40px_rgb(0_0_0/.55)] sm:size-28">
-      <h1 class="mx-auto max-w-3xl font-display text-display-sm font-semibold text-balance sm:text-display">Screenshots, copied the moment you let&nbsp;go.</h1>
-      <p class="mx-auto mt-5 max-w-xl text-lead text-balance text-paper/65">Tearsheet lives in your menu bar. Capture any part of the screen, mark it up, or take the original images straight off a web page.</p>
+      <div class="app-icon mx-auto mb-8 size-24 sm:size-28" role="img" aria-label="Tearsheet icon">
+        <img class="ground" src="/icon-ground.png" alt="" width="112" height="112">
+        <span class="bracket" data-corner="tl"></span><span class="bracket" data-corner="tr"></span><span class="bracket" data-corner="bl"></span><span class="bracket" data-corner="br"></span>
+        <img class="print" src="/icon-print.png" alt="" width="112" height="112">
+      </div>
+      <h1 class="mx-auto max-w-3xl font-display text-display-sm font-semibold text-balance sm:text-display"><span class="word" style="--d:420ms">Screenshots,</span> <span class="word" style="--d:475ms">copied</span> <span class="word" style="--d:530ms">the</span> <span class="word" style="--d:585ms">moment</span> <span class="word" style="--d:640ms">you</span> <span class="word" style="--d:695ms">let&nbsp;go.</span></h1>
+      <p class="intro mx-auto mt-5 max-w-xl text-lead text-balance text-paper/65" style="--d:800ms">Tearsheet lives in your menu bar. Capture any part of the screen, mark it up, or take the original images straight off a web page.</p>
       <div class="mt-9 flex flex-col items-center gap-3">
-        <a href="https://github.com/howells/tearsheet/releases/download/v1.0/Tearsheet-1.0.zip"
-           class="inline-flex min-h-12 items-center gap-2.5 rounded-control bg-paper px-6 font-semibold text-ink shadow-[0_1px_0_rgb(255_255_255/.5)_inset,0_10px_32px_-10px_rgb(244_242_238/.4)] transition hover:bg-white active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper">
-          <svg class="size-[18px] fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" aria-hidden="true"><use href="#i-download"/></svg>
+        <a href="https://github.com/howells/tearsheet/releases/download/v1.0/Tearsheet-1.0.zip" style="--d:880ms"
+           class="intro group inline-flex min-h-12 items-center gap-2.5 rounded-control bg-paper px-6 font-semibold text-ink shadow-[0_1px_0_rgb(255_255_255/.5)_inset,0_10px_32px_-10px_rgb(244_242_238/.4)] transition-[background-color,scale] duration-150 ease-out hover:bg-white active:scale-[.97] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper">
+          <svg class="size-[18px] fill-none stroke-current stroke-2 transition-transform duration-200 ease-(--ease-out) [stroke-linecap:round] [stroke-linejoin:round] group-hover:translate-y-0.5" aria-hidden="true"><use href="#i-download"/></svg>
           Download for Mac
         </a>
-        <p class="text-small text-muted">Version 1.0 · macOS 26 · Apple silicon and Intel</p>
+        <p class="intro text-small text-muted" style="--d:940ms">Version 1.0 · macOS 26 · Apple silicon and Intel</p>
       </div>
     </section>
 
@@ -57,54 +63,57 @@
           <video data-video class="block aspect-video w-full" src="/tearsheet.mp4" poster="/poster.jpg" muted loop playsinline preload="metadata"
                  aria-label="Tearsheet in use: capturing a region, marking it up, and copying the original images from a web page"></video>
           <button type="button" data-toggle aria-label="Play film"
-                  class="absolute right-3 bottom-3 grid size-11 place-items-center rounded-full bg-ink/55 text-paper backdrop-blur-xl transition hover:bg-ink/75 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:right-4 sm:bottom-4">
+                  class="absolute right-3 bottom-3 grid size-11 place-items-center rounded-full bg-ink/55 text-paper backdrop-blur-xl transition-[background-color,scale] duration-150 ease-out hover:bg-ink/75 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:right-4 sm:bottom-4">
             <svg class="size-4 fill-current" aria-hidden="true"><use data-toggle-icon href="#i-play"/></svg>
           </button>
         </figure>
-        <p class="readout absolute right-0 -bottom-12 rounded-[6px] bg-graphite px-2 py-1 text-small text-paper/80 tabular-nums shadow-[0_0_0_0.5px_rgb(255_255_255/.12)] sm:-bottom-14">1920 × 1080</p>
+        <p data-readout class="readout absolute right-0 -bottom-12 rounded-[6px] bg-graphite px-2 py-1 text-small text-paper/80 tabular-nums shadow-[0_0_0_0.5px_rgb(255_255_255/.12)] sm:-bottom-14">1920 × 1080</p>
       </div>
     </section>
 
-    <section class="grid gap-x-8 gap-y-12 pt-32 pb-24 sm:grid-cols-2 lg:grid-cols-4">
-      <div>
-        <p class="flex gap-1" aria-label="Shift Command 4"><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">4</kbd></p>
-        <h2 class="mt-5 font-semibold">Capture</h2>
-        <p class="mt-1.5 text-pretty text-paper/55">Drag across anything. It's on the clipboard when you let go, with a thumbnail you can drag into any app.</p>
-      </div>
-      <div>
-        <p class="flex gap-1" aria-label="Option Shift Command 4"><kbd class="key">⌥</kbd><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">4</kbd></p>
-        <h2 class="mt-5 font-semibold">Annotate</h2>
-        <p class="mt-1.5 text-pretty text-paper/55">One pen, seven tools: arrow, box, text, numbered steps, pixelate, highlighter and crop.</p>
-      </div>
-      <div>
-        <p class="flex gap-1" aria-label="Shift Command 6"><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">6</kbd></p>
-        <h2 class="mt-5 font-semibold">Repeat</h2>
-        <p class="mt-1.5 text-pretty text-paper/55">Capture the same region again, for a before and after that lines up exactly.</p>
-      </div>
-      <div>
-        <p class="flex gap-1" aria-label="Option Shift Command I"><kbd class="key">⌥</kbd><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">I</kbd></p>
-        <h2 class="mt-5 font-semibold">Extract</h2>
-        <p class="mt-1.5 text-pretty text-paper/55">Click an image in Safari or Chrome to copy the original file, full size, not a screenshot of it.</p>
-      </div>
+    <section aria-label="Chapters of the film" class="pt-28 pb-24">
+      <ol data-reveal class="chapters grid gap-x-10 gap-y-10 sm:grid-cols-3">
+        <li>
+          <button type="button" class="chapter group w-full text-left" data-chapter data-start="0" data-end="12.17" style="--c:0">
+            <span class="track" aria-hidden="true"><span class="fill" data-fill></span></span>
+            <span class="mt-5 flex gap-1" aria-hidden="true"><kbd class="key" style="--k:0">⇧</kbd><kbd class="key" style="--k:1">⌘</kbd><kbd class="key" style="--k:2">4</kbd></span>
+            <span class="mt-5 block font-semibold">Capture<span class="sr-only">, Shift Command 4</span></span>
+          </button>
+          <p class="desc mt-1.5 text-pretty text-paper/55">Drag across anything. It's on the clipboard when you let go, with a thumbnail you can drag into any app. ⇧⌘6 takes the same region again.</p>
+        </li>
+        <li>
+          <button type="button" class="chapter group w-full text-left" data-chapter data-start="12.17" data-end="19.43" style="--c:1">
+            <span class="track" aria-hidden="true"><span class="fill" data-fill></span></span>
+            <span class="mt-5 flex gap-1" aria-hidden="true"><kbd class="key" style="--k:0">⌥</kbd><kbd class="key" style="--k:1">⇧</kbd><kbd class="key" style="--k:2">⌘</kbd><kbd class="key" style="--k:3">4</kbd></span>
+            <span class="mt-5 block font-semibold">Annotate<span class="sr-only">, Option Shift Command 4</span></span>
+          </button>
+          <p class="desc mt-1.5 text-pretty text-paper/55">One pen, seven tools: arrow, box, text, numbered steps, pixelate, highlighter and crop.</p>
+        </li>
+        <li>
+          <button type="button" class="chapter group w-full text-left" data-chapter data-start="19.43" data-end="27.8" style="--c:2">
+            <span class="track" aria-hidden="true"><span class="fill" data-fill></span></span>
+            <span class="mt-5 flex gap-1" aria-hidden="true"><kbd class="key" style="--k:0">⌥</kbd><kbd class="key" style="--k:1">⇧</kbd><kbd class="key" style="--k:2">⌘</kbd><kbd class="key" style="--k:3">I</kbd></span>
+            <span class="mt-5 block font-semibold">Extract<span class="sr-only">, Option Shift Command I</span></span>
+          </button>
+          <p class="desc mt-1.5 text-pretty text-paper/55">Click an image in Safari or Chrome to copy the original file, full size, not a screenshot of it.</p>
+        </li>
+      </ol>
     </section>
 
-    <section class="pt-8 pb-24">
-      <div class="sheet-wrap mx-auto max-w-3xl">
-      <div class="sheet relative bg-paper px-7 pt-12 pb-14 text-ink sm:px-14 sm:pt-16 sm:pb-16">
-        <svg class="absolute inset-x-0 bottom-full block h-3.5 w-full fill-paper" viewBox="0 0 1200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 L0.0 9.1 L4.5 7.7 L9.1 7.4 L12.0 6.2 L17.7 4.1 L24.1 6.6 L27.2 4.4 L29.9 4.9 L32.5 5.7 L38.4 5.7 L42.9 6.2 L46.5 7.3 L52.4 6.4 L55.8 5.2 L61.4 5.7 L65.4 7.6 L67.9 5.3 L72.3 7.9 L75.1 6.9 L78.7 5.2 L85.0 7.5 L88.5 2.8 L91.7 7.0 L95.0 7.5 L100.1 5.5 L103.4 5.9 L109.1 5.9 L112.5 6.0 L117.5 4.9 L120.9 5.2 L124.7 5.1 L127.6 5.8 L132.5 4.8 L138.8 4.7 L144.8 3.3 L150.9 4.9 L154.2 4.4 L157.4 4.9 L162.4 3.0 L165.0 4.7 L170.3 2.3 L175.2 2.3 L180.6 1.7 L185.3 4.3 L189.0 4.6 L191.5 2.6 L194.3 2.4 L199.1 2.5 L205.1 5.6 L210.4 4.7 L213.0 3.1 L218.3 4.1 L222.8 6.1 L229.3 4.4 L234.7 7.3 L240.0 7.2 L243.9 7.0 L249.9 6.3 L255.9 6.8 L259.9 6.8 L262.7 7.0 L268.7 7.2 L274.2 6.5 L280.0 4.8 L282.6 6.3 L286.1 6.5 L291.0 7.1 L293.6 5.0 L296.9 4.5 L302.0 5.3 L305.8 6.0 L310.1 6.4 L316.1 5.1 L319.8 4.4 L325.7 6.9 L332.0 5.4 L336.3 5.6 L340.4 7.1 L344.2 8.0 L348.5 3.1 L351.2 8.2 L354.9 7.1 L359.2 6.7 L362.7 4.9 L367.0 9.3 L372.7 10.8 L376.0 9.5 L378.5 9.6 L381.8 9.1 L387.1 10.2 L392.6 9.9 L398.7 9.0 L404.1 9.1 L409.1 11.5 L413.9 11.3 L420.1 9.7 L423.5 10.4 L428.5 10.1 L434.6 10.6 L439.3 9.8 L445.4 9.8 L448.3 8.3 L453.8 5.6 L456.6 9.2 L460.4 9.1 L463.5 8.3 L469.4 8.8 L473.8 9.7 L477.2 8.5 L482.6 9.0 L488.5 9.0 L492.5 10.1 L495.9 10.2 L500.5 9.6 L505.1 9.6 L507.7 11.2 L511.8 10.8 L516.3 10.6 L521.0 9.9 L527.1 9.5 L530.2 10.0 L536.3 10.1 L539.5 10.5 L542.5 9.1 L545.9 10.5 L549.9 10.0 L555.3 8.1 L558.8 8.1 L563.0 8.3 L567.7 7.3 L572.7 8.4 L578.6 7.7 L582.0 7.9 L588.1 6.0 L594.3 5.3 L600.4 4.6 L605.8 4.8 L611.6 5.1 L614.6 5.0 L617.2 4.3 L623.3 6.8 L627.9 6.2 L633.1 4.5 L636.0 4.1 L640.6 5.9 L643.8 4.8 L650.3 7.4 L653.0 7.6 L658.6 5.7 L663.1 6.2 L665.7 7.1 L668.9 6.3 L673.0 5.5 L677.6 4.9 L683.3 7.0 L688.3 5.9 L692.8 7.6 L696.4 7.2 L702.0 6.6 L708.1 6.4 L713.6 5.6 L719.0 3.0 L723.4 2.6 L728.5 4.2 L734.7 4.0 L739.9 3.5 L743.9 4.7 L749.2 3.9 L751.8 3.4 L755.4 0.9 L759.4 1.8 L765.5 3.4 L771.8 3.7 L776.9 4.8 L781.8 2.1 L784.9 4.3 L789.4 2.1 L793.6 5.1 L797.6 4.6 L802.3 4.9 L806.0 4.3 L808.7 4.9 L812.7 7.5 L815.4 8.0 L818.2 7.8 L822.6 8.2 L827.2 8.2 L831.6 8.4 L836.5 5.6 L840.8 3.6 L843.8 6.6 L848.1 6.0 L852.3 7.5 L858.8 7.9 L862.3 5.1 L867.9 6.5 L871.5 6.6 L876.4 6.3 L879.6 5.0 L885.8 5.4 L889.4 5.5 L892.3 5.9 L895.1 6.4 L900.1 5.6 L903.5 5.6 L909.3 5.0 L915.1 7.2 L918.4 6.8 L924.2 7.0 L930.6 7.4 L936.1 9.8 L940.1 7.5 L942.9 7.7 L947.3 10.0 L952.9 8.4 L958.1 8.7 L963.5 10.9 L966.6 9.9 L970.5 9.3 L975.3 11.9 L981.5 10.3 L985.2 9.9 L991.4 11.5 L995.4 9.7 L999.4 9.5 L1004.2 10.6 L1010.0 9.5 L1015.6 10.3 L1018.2 9.0 L1022.9 10.2 L1028.7 7.1 L1034.3 7.0 L1039.8 9.5 L1044.8 7.0 L1049.9 7.4 L1055.5 8.4 L1059.5 7.9 L1064.7 8.6 L1070.1 9.5 L1074.2 10.0 L1080.2 10.2 L1086.2 11.0 L1090.8 10.4 L1095.0 9.6 L1100.5 11.5 L1103.6 9.0 L1107.3 9.5 L1110.3 10.4 L1113.5 8.5 L1118.3 9.4 L1121.6 8.8 L1126.9 9.7 L1130.2 8.5 L1135.7 8.2 L1141.5 8.3 L1147.5 9.2 L1152.2 8.9 L1155.6 5.7 L1161.3 6.3 L1165.9 5.5 L1171.0 2.8 L1175.0 6.6 L1179.9 4.3 L1183.7 4.4 L1188.2 5.5 L1191.8 5.1 L1197.4 3.3 L1200.0 7 L1200 14 Z"/></svg>
+    <section class="pt-4 pb-24">
+      <div data-reveal class="proof mx-auto max-w-3xl rounded-control bg-paper px-7 py-12 text-ink sm:px-14 sm:py-14">
         <h2 class="font-display text-title font-semibold text-balance">Before your first capture</h2>
         <ol class="mt-8 grid gap-5 text-ink/75 [counter-reset:step]">
-          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]">
+          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]" style="--s:0">
             <p class="pt-0.5 text-pretty">Move Tearsheet to Applications, open it, and allow Screen Recording when asked.</p>
           </li>
-          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]">
+          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]" style="--s:1">
             <p class="pt-0.5 text-pretty">In System Settings › Keyboard › Keyboard Shortcuts › Screenshots, turn off both “selected area” shortcuts so ⇧⌘4 reaches Tearsheet.</p>
           </li>
-          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]">
+          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]" style="--s:2">
             <p class="pt-0.5 text-pretty">To extract images, turn on Allow JavaScript from Apple Events: in Chrome under View › Developer, in Safari under Develop.</p>
           </li>
         </ol>
-      </div>
       </div>
     </section>
   </main>
@@ -116,32 +125,6 @@
     </div>
   </footer>
 
-  <script>
-    const film = document.querySelector("[data-film]");
-    const video = film.querySelector("[data-video]");
-    const toggle = film.querySelector("[data-toggle]");
-    const toggleIcon = film.querySelector("[data-toggle-icon]");
-    const still = matchMedia("(prefers-reduced-motion: reduce)");
-    let pausedByVisitor = still.matches;
-
-    function render() {
-      const playing = !video.paused;
-      toggle.setAttribute("aria-label", playing ? "Pause film" : "Play film");
-      toggleIcon.setAttribute("href", playing ? "#i-pause" : "#i-play");
-    }
-
-    toggle.addEventListener("click", () => {
-      if (video.paused) { pausedByVisitor = false; video.play(); }
-      else { pausedByVisitor = true; video.pause(); }
-    });
-    video.addEventListener("play", render);
-    video.addEventListener("pause", render);
-
-    new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) film.removeAttribute("data-waiting");
-      if (entry.intersectionRatio >= 0.5 && !pausedByVisitor) video.play().catch(() => {});
-      else if (entry.intersectionRatio < 0.5) video.pause();
-    }, { threshold: [0, 0.5] }).observe(film);
-  </script>
+  <script src="/motion.js" defer></script>
 </body>
 </html>

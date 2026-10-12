@@ -34,7 +34,10 @@
   --radius-control: 0.75rem;
   --radius-key: 0.4375rem;
 
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1); /* entrances, from Darkroom.Motion.easeOut */
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1); /* on-screen movement, from Darkroom.Motion.easeInOut */
+  /* A soft settle sampled from a spring (damping 0.85), for the print landing in the icon. */
+  --ease-settle: linear(0, 0.0324, 0.1107, 0.2132, 0.3246, 0.435, 0.5381, 0.6304, 0.7104, 0.7779, 0.8336, 0.8784, 0.9138, 0.9412, 0.9619, 0.9771, 0.988, 0.9956, 1.0006, 1.0037, 1.0054, 1.0062, 1.0063, 1.006, 1.0054, 1.0047, 1.004, 1.0033, 1.0027, 1.0022, 1.0017, 1.0013, 1.001, 1.0007, 1.0005, 1.0003, 1.0002, 1.0001, 1.0001, 1, 1);
 }
 
 @layer base {
@@ -65,26 +68,91 @@
   color: var(--color-paper);
 }
 
-/* The film, framed by the icon's crop marks and the capture size readout.
-   The first time it scrolls into view, the marks close in as if selecting it. */
-.film figure,
-.film .readout {
-  transition:
-    opacity 900ms var(--ease-out),
-    translate 900ms var(--ease-out);
+/* ---------------------------------------------------------------------------
+   Motion. The page is seen once, so it has room for a little ceremony, all of
+   it borrowed from the app: a print landing inside crop marks, a region being
+   dragged out, shortcut keys being pressed. Under reduced motion everything
+   simply fades.
+   ------------------------------------------------------------------------ */
+
+/* Hero copy rises out of a soft focus, word by word. */
+.intro,
+h1 .word {
+  animation: focus-in 900ms var(--ease-out-quint) var(--d, 0ms) backwards;
 }
-.film .readout {
-  transition-delay: 650ms;
+h1 .word {
+  display: inline-block;
 }
-.film[data-waiting] figure {
-  opacity: 0;
-  translate: 0 24px;
-}
-.film[data-waiting] .readout {
-  opacity: 0;
-  translate: 0 -6px;
+@keyframes focus-in {
+  from {
+    opacity: 0;
+    translate: 0 0.35em;
+    filter: blur(8px);
+  }
 }
 
+/* The icon assembles from its layers: ground, then crop marks closing in,
+   then the print dropping into place. */
+.app-icon {
+  position: relative;
+  container-type: inline-size;
+}
+.app-icon .ground,
+.app-icon .print {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.app-icon .ground {
+  border-radius: 22.37%;
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.14),
+    0 18px 40px rgb(0 0 0 / 0.55);
+  animation: ground-in 600ms var(--ease-out-quint) backwards;
+}
+@keyframes ground-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+.app-icon .print {
+  animation: print-in 1100ms var(--ease-settle) 260ms backwards;
+}
+@keyframes print-in {
+  from {
+    opacity: 0;
+    translate: 0 -10%;
+    rotate: -9deg;
+    scale: 1.06;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+.bracket {
+  position: absolute;
+  width: 11%;
+  height: 11%;
+  border: 0 solid #e7e3dc;
+  border-radius: 1.2cqi;
+  animation: bracket-in 800ms var(--ease-out-quint) 140ms backwards;
+}
+.bracket[data-corner="tl"] { --sx: -1; --sy: -1; top: 13%; left: 14.2%; border-top-width: 2.2cqi; border-left-width: 2.2cqi; }
+.bracket[data-corner="tr"] { --sx: 1; --sy: -1; top: 13%; right: 14.2%; border-top-width: 2.2cqi; border-right-width: 2.2cqi; }
+.bracket[data-corner="bl"] { --sx: -1; --sy: 1; bottom: 13%; left: 14.2%; border-bottom-width: 2.2cqi; border-left-width: 2.2cqi; }
+.bracket[data-corner="br"] { --sx: 1; --sy: 1; bottom: 13%; right: 14.2%; border-bottom-width: 2.2cqi; border-right-width: 2.2cqi; }
+@keyframes bracket-in {
+  from {
+    opacity: 0;
+    translate: calc(var(--sx) * 9cqi) calc(var(--sy) * 9cqi);
+  }
+}
+
+/* The film is selected like a region: the frame is dragged out from its top
+   left corner, the crop marks travel with it, and the size readout counts up.
+   motion.js drives it; these are the resting states. */
 .mark {
   --gap: 0.75rem;
   position: absolute;
@@ -92,9 +160,6 @@
   height: 1.75rem;
   border: 0 solid color-mix(in oklab, var(--color-paper) 85%, transparent);
   translate: calc(var(--sx) * var(--gap)) calc(var(--sy) * var(--gap));
-  transition:
-    translate 1000ms var(--ease-out) 150ms,
-    opacity 500ms ease 150ms;
 }
 @media (min-width: 40rem) {
   .mark {
@@ -103,46 +168,124 @@
     height: 2.25rem;
   }
 }
-.film[data-waiting] .mark {
-  --gap: 3.5rem;
+.mark[data-corner="tl"] { --sx: -1; --sy: -1; top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 4px; }
+.mark[data-corner="tr"] { --sx: 1; --sy: -1; top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 4px; }
+.mark[data-corner="bl"] { --sx: -1; --sy: 1; bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 4px; }
+.mark[data-corner="br"] { --sx: 1; --sy: 1; bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 4px; }
+/* Before the selection runs, only the starting corner shows. */
+.film[data-waiting] figure,
+.film[data-waiting] .readout,
+.film[data-waiting] .mark:not([data-corner="tl"]) {
   opacity: 0;
 }
-[data-corner="tl"] { --sx: -1; --sy: -1; top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 4px; }
-[data-corner="tr"] { --sx: 1; --sy: -1; top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 4px; }
-[data-corner="bl"] { --sx: -1; --sy: 1; bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 4px; }
-[data-corner="br"] { --sx: 1; --sy: 1; bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 4px; }
 
-/* The setup steps, printed on a sheet torn from the top, with its corner
-   turned up like the print in the app icon. */
-.sheet-wrap {
-  rotate: -0.4deg;
-  filter: drop-shadow(0 30px 40px rgb(0 0 0 / 0.5)) drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+/* Chapters: each one is a stretch of the film. The bar fills as it plays,
+   the current one is bright, and clicking one jumps the film there. */
+.chapters > li {
+  transition: opacity 300ms ease;
 }
-.sheet {
-  --fold: 2.5rem;
-  clip-path: polygon(0 -1rem, 100% -1rem, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%, 0 100%);
+.chapters[data-live] > li:not([data-active]) {
+  opacity: 0.55;
 }
-@media (min-width: 40rem) {
-  .sheet {
-    --fold: 3.5rem;
+@media (hover: hover) and (pointer: fine) {
+  .chapters[data-live] > li:not([data-active]):hover {
+    opacity: 0.8;
   }
 }
-.sheet::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: var(--fold);
-  height: var(--fold);
-  background: linear-gradient(135deg, #e9e4da 0%, #d6cfc2 55%, #c4bcae 100%);
-  clip-path: polygon(0 0, 100% 0, 0 100%);
-  box-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.6);
+.chapter {
+  display: block;
+  padding-block: 0.25rem;
+  border-radius: var(--radius-key);
+  outline-offset: 6px;
+  cursor: pointer;
+}
+.chapter:focus-visible {
+  outline: 2px solid var(--color-paper);
+}
+.track {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.12);
+  overflow: hidden;
+}
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--color-paper);
+  transform-origin: left;
+  scale: 0 1;
+}
+/* When a chapter starts, its keys are pressed in order, as you would type them. */
+li[data-pressing] .key {
+  animation: key-press 260ms var(--ease-out-quint) calc(var(--k) * 90ms) both;
+}
+@keyframes key-press {
+  40% {
+    translate: 0 1.5px;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      0 0 0 0.5px rgb(255 255 255 / 0.3),
+      0 0 0 rgb(0 0 0 / 0.4);
+  }
+}
+
+/* Reveal on scroll, once: a rise for the chapters, and the setup panel
+   unrolling from the top with its steps following. */
+[data-reveal] {
+  transition:
+    opacity 700ms var(--ease-out-quint),
+    translate 700ms var(--ease-out-quint),
+    clip-path 900ms var(--ease-in-out-quart);
+}
+.chapters[data-reveal]:not([data-seen]) {
+  opacity: 0;
+  translate: 0 20px;
+}
+.proof {
+  clip-path: inset(0 0 0 0 round var(--radius-control));
+}
+.proof:not([data-seen]) {
+  clip-path: inset(0 0 100% 0 round var(--radius-control));
+}
+.proof li {
+  transition:
+    opacity 600ms var(--ease-out-quint) calc(350ms + var(--s) * 80ms),
+    translate 600ms var(--ease-out-quint) calc(350ms + var(--s) * 80ms);
+}
+.proof:not([data-seen]) li {
+  opacity: 0;
+  translate: 0 10px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .film figure,
-  .film .readout,
-  .mark {
-    transition: none;
+  .intro,
+  h1 .word,
+  .app-icon .ground,
+  .app-icon .print,
+  .bracket {
+    animation: fade-in 400ms ease backwards;
+  }
+  li[data-pressing] .key {
+    animation: none;
+  }
+  [data-reveal],
+  .proof li {
+    transition: opacity 400ms ease;
+  }
+  .chapters[data-reveal]:not([data-seen]),
+  .proof:not([data-seen]) li {
+    translate: none;
+  }
+  .proof:not([data-seen]) {
+    clip-path: inset(0 0 0 0 round var(--radius-control));
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }
