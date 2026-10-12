@@ -24,6 +24,24 @@ enum Darkroom {
         /// Moving between two places on screen.
         static let easeInOut = CAMediaTimingFunction(controlPoints: 0.77, 0, 0.175, 1)
 
+        /// A spring given as Motion gives one: roughly when it arrives, and how far it
+        /// overshoots. Motion's mapping, with mass 1 and a damping ratio of 1 - bounce.
+        struct Spring {
+            let stiffness: CGFloat
+            let damping: CGFloat
+
+            init(visualDuration: CGFloat, bounce: CGFloat) {
+                let root = 2 * .pi / (visualDuration * 1.2)
+                stiffness = root * root
+                damping = 2 * min(1, max(0.05, 1 - bounce)) * root
+            }
+
+            /// Things moving because the pointer asked them to.
+            static let standard = Spring(visualDuration: 0.3, bounce: 0)
+            /// A settle after a throw, like a new capture landing on the pile.
+            static let settle = Spring(visualDuration: 0.35, bounce: 0.15)
+        }
+
         /// With Reduce Motion on, things fade in place instead of travelling or scaling.
         static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
 

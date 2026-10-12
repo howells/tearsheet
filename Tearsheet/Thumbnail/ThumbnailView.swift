@@ -18,7 +18,10 @@ final class ThumbnailView: NSView, NSDraggingSource {
         layer?.backgroundColor = Darkroom.graphite.cgColor
         layer?.borderColor = NSColor.white.withAlphaComponent(0.22).cgColor
         layer?.borderWidth = 0.5
+        // Smooth edges when the card is tilted in the fan.
+        layer?.allowsEdgeAntialiasing = true
 
+        imageLayer.allowsEdgeAntialiasing = true
         imageLayer.contentsGravity = .resizeAspectFill
         imageLayer.contents = item.image
         layer?.addSublayer(imageLayer)
@@ -196,12 +199,12 @@ final class ThumbnailView: NSView, NSDraggingSource {
         case .changed:
             // Positive means the fingers moved right, whichever scrolling direction is set.
             swipeOffset += event.isDirectionInvertedFromDevice ? event.scrollingDeltaX : -event.scrollingDeltaX
-            panel.setFrameOrigin(CGPoint(x: panel.homeOrigin.x + min(swipeOffset, 12), y: panel.homeOrigin.y))
+            panel.swipe(to: min(swipeOffset, 12))
         case .ended, .cancelled:
             if swipeOffset < -60 {
                 panel.dismiss(slidingLeft: true)
             } else {
-                Darkroom.Motion.animate(0.25, Darkroom.Motion.easeOut) { panel.animateOrigin(to: panel.homeOrigin) }
+                panel.settleSwipe()
             }
             swipeOffset = 0
         default:
