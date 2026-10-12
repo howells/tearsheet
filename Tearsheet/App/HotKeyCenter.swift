@@ -1,8 +1,8 @@
 import Carbon.HIToolbox
 
 /// Global shortcuts through Carbon hot keys, which need no Accessibility
-/// permission. A shortcut macOS still owns (⇧⌘4 before it is switched off in
-/// System Settings) registers fine but never reaches us.
+/// permission. While macOS still claims ⇧⌘4 its own screenshot runs as well,
+/// so Tearsheet offers to switch that off and then registers again.
 final class HotKeyCenter {
     struct Shortcut {
         let keyCode: Int
@@ -14,8 +14,9 @@ final class HotKeyCenter {
         static let extractImages = Shortcut(keyCode: kVK_ANSI_I, modifiers: cmdKey | shiftKey | optionKey)
     }
 
+    private var shortcuts: [UInt32: Shortcut] = [:]
     private var actions: [UInt32: () -> Void] = [:]
-    private var hotKeys: [EventHotKeyRef] = []
+    private var hotKeys: [UInt32: EventHotKeyRef] = [:]
     private var eventHandler: EventHandlerRef?
 
     init() {
@@ -32,10 +33,21 @@ final class HotKeyCenter {
 
     func register(_ shortcut: Shortcut, action: @escaping () -> Void) {
         let id = UInt32(actions.count + 1)
+        shortcuts[id] = shortcut
+        actions[id] = action
+        install(id)
+    }
+
+    /// Registers every shortcut afresh, for when macOS has just let go of one.
+    func reinstall() {
+        for (id, ref) in hotKeys { UnregisterEventHotKey(ref); hotKeys[id] = nil }
+        for id in shortcuts.keys { install(id) }
+    }
+
+    private func install(_ id: UInt32) {
+        guard let shortcut = shortcuts[id] else { return }
         var ref: EventHotKeyRef?
         let status = RegisterEventHotKey(UInt32(shortcut.keyCode), UInt32(shortcut.modifiers), EventHotKeyID(signature: OSType(0x5452_5348), id: id), GetApplicationEventTarget(), 0, &ref)
-        guard status == noErr, let ref else { return }
-        hotKeys.append(ref)
-        actions[id] = action
+        if status == noErr, let ref { hotKeys[id] = ref }
     }
 }

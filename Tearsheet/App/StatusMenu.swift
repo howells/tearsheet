@@ -51,7 +51,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.addItem(entry("Extract Images", key: "i", modifiers: [.command, .shift, .option], action: #selector(extractImages)))
         if SystemScreenshotShortcut.isEnabled {
             menu.addItem(.separator())
-            menu.addItem(entry("Turn Off macOS ⇧⌘4 to Use Tearsheet…", action: #selector(openKeyboardSettings)))
+            menu.addItem(entry("Use ⇧⌘4 for Tearsheet", action: #selector(takeShiftCommand4)))
         }
         if !ScreenRecordingPermission.isGranted {
             menu.addItem(entry("Grant Screen Recording Access…", action: #selector(openPermissionSettings)))
@@ -72,7 +72,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     @objc private func captureIntoEditor() { Task { await coordinator.captureRegion(openEditor: true) } }
     @objc private func repeatLastRegion() { Task { await coordinator.repeatLastRegion() } }
     @objc private func extractImages() { Task { await coordinator.extractImages() } }
-    @objc private func openKeyboardSettings() { SystemScreenshotShortcut.openSettings() }
+    @objc private func takeShiftCommand4() { SystemScreenshotShortcut.turnOff() }
     @objc private func openPermissionSettings() { ScreenRecordingPermission.openSettings() }
     @objc private func showSettings() { openSettings() }
     @objc private func quit() { NSApp.terminate(nil) }

@@ -126,7 +126,7 @@ private struct SettingsView: View {
                         } trailing: {
                             HStack(spacing: 10) {
                                 Status("Uses ⇧⌘4", symbol: nil)
-                                TintedButton("Open Settings…") { SystemScreenshotShortcut.openSettings() }
+                                TintedButton("Use for Tearsheet") { SystemScreenshotShortcut.turnOff() }
                             }
                         }
                     }
@@ -143,6 +143,9 @@ private struct SettingsView: View {
         .background(Color.graphite)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             hasPermission = ScreenRecordingPermission.isGranted
+            systemShortcutOn = SystemScreenshotShortcut.isEnabled
+        }
+        .onReceive(NotificationCenter.default.publisher(for: SystemScreenshotShortcut.didTurnOff)) { _ in
             systemShortcutOn = SystemScreenshotShortcut.isEnabled
         }
     }

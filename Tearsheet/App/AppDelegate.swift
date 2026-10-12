@@ -17,6 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotKeys.register(.captureIntoEditor) { [coordinator] in Task { await coordinator.captureRegion(openEditor: true) } }
         hotKeys.register(.repeatLastRegion) { [coordinator] in Task { await coordinator.repeatLastRegion() } }
         hotKeys.register(.extractImages) { [coordinator] in Task { await coordinator.extractImages() } }
+        NotificationCenter.default.addObserver(forName: SystemScreenshotShortcut.didTurnOff, object: nil, queue: .main) { [hotKeys] _ in
+            MainActor.assumeIsolated { hotKeys.reinstall() }
+        }
 
         if !ScreenRecordingPermission.isGranted { ScreenRecordingPermission.request() }
     }
