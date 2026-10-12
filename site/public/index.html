@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tearsheet: screenshots for your Mac's menu bar</title>
+  <meta name="description" content="Tearsheet captures any part of your screen, marks it up with one pen, and takes the original images straight off a web page. Free for macOS 26.">
+  <meta property="og:title" content="Tearsheet">
+  <meta property="og:description" content="Screenshots, copied the moment you let go. Free for macOS 26.">
+  <meta property="og:image" content="https://tearsheet.danielhowells.com/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0e0e10">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preload" href="/poster.jpg" as="image">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="min-h-dvh bg-ink font-sans text-body text-paper">
+  <svg width="0" height="0" class="absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol>
+      <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="3.5" height="15" rx="1"/><rect x="14.5" y="4.5" width="3.5" height="15" rx="1"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8Z"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="mx-auto flex max-w-5xl items-center justify-between px-6 pt-6">
+    <a href="/" class="flex min-h-11 items-center gap-2.5 font-semibold">
+      <img src="/icon.png" alt="" width="28" height="28" class="size-7">
+      Tearsheet
+    </a>
+    <a href="https://github.com/howells/tearsheet" class="flex min-h-11 items-center px-1 text-muted transition-colors hover:text-paper">Source on GitHub</a>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-6">
+    <section class="pt-20 pb-16 text-center sm:pt-28">
+      <img src="/icon.png" alt="" width="112" height="112" class="mx-auto mb-8 size-24 drop-shadow-[0_18px_40px_rgb(0_0_0/.55)] sm:size-28">
+      <h1 class="mx-auto max-w-3xl font-display text-display-sm font-semibold text-balance sm:text-display">Screenshots, copied the moment you let&nbsp;go.</h1>
+      <p class="mx-auto mt-5 max-w-xl text-lead text-balance text-paper/65">Tearsheet lives in your menu bar. Capture any part of the screen, mark it up, or take the original images straight off a web page.</p>
+      <div class="mt-9 flex flex-col items-center gap-3">
+        <a href="https://github.com/howells/tearsheet/releases/download/v1.0/Tearsheet-1.0.zip"
+           class="inline-flex min-h-12 items-center gap-2.5 rounded-control bg-paper px-6 font-semibold text-ink shadow-[0_1px_0_rgb(255_255_255/.5)_inset,0_10px_32px_-10px_rgb(244_242_238/.4)] transition hover:bg-white active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-paper">
+          <svg class="size-[18px] fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" aria-hidden="true"><use href="#i-download"/></svg>
+          Download for Mac
+        </a>
+        <p class="text-small text-muted">Version 1.0 · macOS 26 · Apple silicon and Intel</p>
+      </div>
+    </section>
+
+    <section aria-label="Film">
+      <figure data-film data-waiting class="film relative overflow-hidden rounded-screen bg-graphite shadow-[0_0_0_1px_rgb(255_255_255/.08),0_50px_140px_-40px_rgb(196_98_52/.45)]">
+        <video data-video class="block aspect-video w-full" src="/tearsheet.mp4" poster="/poster.jpg" muted loop playsinline preload="metadata"
+               aria-label="Tearsheet in use: capturing a region, marking it up, and copying the original images from a web page"></video>
+        <button type="button" data-toggle aria-label="Play film"
+                class="absolute right-3 bottom-3 grid size-11 place-items-center rounded-full bg-ink/55 text-paper backdrop-blur-xl transition hover:bg-ink/75 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:right-4 sm:bottom-4">
+          <svg class="size-4 fill-current" aria-hidden="true"><use data-toggle-icon href="#i-play"/></svg>
+        </button>
+      </figure>
+    </section>
+
+    <section class="grid gap-x-8 gap-y-12 py-24 sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <p class="flex gap-1" aria-label="Shift Command 4"><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">4</kbd></p>
+        <h2 class="mt-5 font-semibold">Capture</h2>
+        <p class="mt-1.5 text-pretty text-paper/55">Drag across anything. It's on the clipboard when you let go, with a thumbnail you can drag into any app.</p>
+      </div>
+      <div>
+        <p class="flex gap-1" aria-label="Option Shift Command 4"><kbd class="key">⌥</kbd><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">4</kbd></p>
+        <h2 class="mt-5 font-semibold">Annotate</h2>
+        <p class="mt-1.5 text-pretty text-paper/55">One pen, seven tools: arrow, box, text, numbered steps, pixelate, highlighter and crop.</p>
+      </div>
+      <div>
+        <p class="flex gap-1" aria-label="Shift Command 6"><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">6</kbd></p>
+        <h2 class="mt-5 font-semibold">Repeat</h2>
+        <p class="mt-1.5 text-pretty text-paper/55">Capture the same region again, for a before and after that lines up exactly.</p>
+      </div>
+      <div>
+        <p class="flex gap-1" aria-label="Option Shift Command I"><kbd class="key">⌥</kbd><kbd class="key">⇧</kbd><kbd class="key">⌘</kbd><kbd class="key">I</kbd></p>
+        <h2 class="mt-5 font-semibold">Extract</h2>
+        <p class="mt-1.5 text-pretty text-paper/55">Click an image in Safari or Chrome to copy the original file, full size, not a screenshot of it.</p>
+      </div>
+    </section>
+
+    <section class="border-t border-white/10 py-16">
+      <h2 class="text-center font-display text-title font-semibold text-balance">Before your first capture</h2>
+      <ol class="mx-auto mt-8 grid max-w-2xl gap-4 text-paper/70 [counter-reset:step]">
+        <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-graphite before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]">
+          <p class="pt-0.5 text-pretty">Move Tearsheet to Applications, open it, and allow Screen Recording when asked.</p>
+        </li>
+        <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-graphite before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]">
+          <p class="pt-0.5 text-pretty">In System Settings › Keyboard › Keyboard Shortcuts › Screenshots, turn off both “selected area” shortcuts so ⇧⌘4 reaches Tearsheet.</p>
+        </li>
+        <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-graphite before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]">
+          <p class="pt-0.5 text-pretty">To extract images, turn on Allow JavaScript from Apple Events: in Chrome under View › Developer, in Safari under Develop.</p>
+        </li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="mx-auto max-w-5xl px-6 text-small text-muted">
+    <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-white/10 py-8">
+      <p>Signed and notarised by Apple.</p>
+      <p>Made by <a href="https://danielhowells.com" class="text-paper/70 underline decoration-white/25 underline-offset-4 transition-colors hover:text-paper">Daniel Howells</a></p>
+    </div>
+  </footer>
+
+  <script>
+    const film = document.querySelector("[data-film]");
+    const video = film.querySelector("[data-video]");
+    const toggle = film.querySelector("[data-toggle]");
+    const toggleIcon = film.querySelector("[data-toggle-icon]");
+    const still = matchMedia("(prefers-reduced-motion: reduce)");
+    let pausedByVisitor = still.matches;
+
+    function render() {
+      const playing = !video.paused;
+      toggle.setAttribute("aria-label", playing ? "Pause film" : "Play film");
+      toggleIcon.setAttribute("href", playing ? "#i-pause" : "#i-play");
+    }
+
+    toggle.addEventListener("click", () => {
+      if (video.paused) { pausedByVisitor = false; video.play(); }
+      else { pausedByVisitor = true; video.pause(); }
+    });
+    video.addEventListener("play", render);
+    video.addEventListener("pause", render);
+
+    new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) film.removeAttribute("data-waiting");
+      if (entry.intersectionRatio >= 0.5 && !pausedByVisitor) video.play().catch(() => {});
+      else if (entry.intersectionRatio < 0.5) video.pause();
+    }, { threshold: [0, 0.5] }).observe(film);
+  </script>
+</body>
+</html>

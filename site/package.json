@@ -1,0 +1,12 @@
+{
+  "name": "tearsheet-site",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i src/app.css -o public/app.css --minify",
+    "dev": "tailwindcss -i src/app.css -o public/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
