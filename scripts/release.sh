@@ -2,14 +2,19 @@
 # Builds a Developer ID copy, notarises and staples it, and publishes it as a
 # GitHub release tagged v<MARKETING_VERSION>.
 #
-#   ASC_ISSUER_ID=<uuid> scripts/release.sh
+#   scripts/release.sh
 #
-# Signs in with an App Store Connect API key (Admin role, for the Developer ID
-# certificate). ASC_KEY_ID defaults to the first key in ~/.appstoreconnect/private_keys.
+# Needs the Developer ID Application certificate in the login keychain; only the
+# Account Holder can create it, in Xcode. Notarises with an App Store Connect API
+# key; ASC_KEY_ID defaults to the first key in ~/.appstoreconnect/private_keys.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-: "${ASC_ISSUER_ID:?Set ASC_ISSUER_ID: App Store Connect, Users and Access, Integrations, above the key list}"
+IDENTITY="Developer ID Application: Daniel Howells (26GV92ZQ4L)"
+security find-identity -v -p codesigning | grep -qF "\"$IDENTITY\"" \
+  || { echo "No \"$IDENTITY\" in the keychain; create it in Xcode, Settings, Accounts, Manage Certificates" >&2; exit 1; }
+
+ASC_ISSUER_ID="${ASC_ISSUER_ID:-69a6de78-3928-47e3-e053-5b8c7c11a4d1}"
 KEYS="$HOME/.appstoreconnect/private_keys"
 ASC_KEY_ID="${ASC_KEY_ID:-$(ls "$KEYS" | sed -n 's/^AuthKey_\(.*\)\.p8$/\1/p' | head -1)}"
 KEY_PATH="$KEYS/AuthKey_$ASC_KEY_ID.p8"
@@ -47,21 +52,22 @@ cat > "$OUT/ExportOptions.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>method</key><string>developer-id</string>
-  <key>signingStyle</key><string>automatic</string>
+  <key>signingStyle</key><string>manual</string>
+  <key>signingCertificate</key><string>$IDENTITY</string>
   <key>teamID</key><string>26GV92ZQ4L</string>
 </dict>
 </plist>
 PLIST
 
+# Manual signing with no API key: export must never ask Apple for a new certificate.
 xcodebuild -exportArchive \
   -archivePath "$OUT/Tearsheet.xcarchive" \
   -exportOptionsPlist "$OUT/ExportOptions.plist" \
-  -exportPath "$OUT/export" \
-  "${AUTH[@]}"
+  -exportPath "$OUT/export"
 
 APP="$OUT/export/Tearsheet.app"
 codesign --verify --strict --deep "$APP"
-codesign -dvv "$APP" 2>&1 | grep -q "Authority=Developer ID Application" \
+codesign -dvv "$APP" 2>&1 | grep -qF "Authority=$IDENTITY" \
   || { echo "Export is not signed with Developer ID" >&2; exit 1; }
 
 ditto -c -k --keepParent "$APP" "$OUT/notarise.zip"
