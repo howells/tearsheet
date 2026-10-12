@@ -11,7 +11,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 IDENTITY="Developer ID Application: Daniel Howells (26GV92ZQ4L)"
-security find-identity -v -p codesigning | grep -qF "\"$IDENTITY\"" \
+IDENTITIES=$(security find-identity -v -p codesigning)
+grep -qF "\"$IDENTITY\"" <<<"$IDENTITIES" \
   || { echo "No \"$IDENTITY\" in the keychain; create it in Xcode, Settings, Accounts, Manage Certificates" >&2; exit 1; }
 
 ASC_ISSUER_ID="${ASC_ISSUER_ID:-69a6de78-3928-47e3-e053-5b8c7c11a4d1}"
@@ -67,7 +68,8 @@ xcodebuild -exportArchive \
 
 APP="$OUT/export/Tearsheet.app"
 codesign --verify --strict --deep "$APP"
-codesign -dvv "$APP" 2>&1 | grep -qF "Authority=$IDENTITY" \
+SIGNATURE=$(codesign -dvv "$APP" 2>&1)
+grep -qF "Authority=$IDENTITY" <<<"$SIGNATURE" \
   || { echo "Export is not signed with Developer ID" >&2; exit 1; }
 
 ditto -c -k --keepParent "$APP" "$OUT/notarise.zip"
