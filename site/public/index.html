@@ -101,17 +101,43 @@
     </section>
 
     <section class="pt-4 pb-24">
-      <div data-reveal class="proof mx-auto max-w-3xl rounded-control bg-paper px-7 py-12 text-ink sm:px-14 sm:py-14">
+      <div data-reveal class="proof rounded-control bg-paper px-6 py-12 text-ink sm:px-12 sm:py-14">
         <h2 class="font-display text-title font-semibold text-balance">Before your first capture</h2>
-        <ol class="mt-8 grid gap-5 text-ink/75 [counter-reset:step]">
-          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]" style="--s:0">
-            <p class="pt-0.5 text-pretty">Move Tearsheet to Applications, open it, and allow Screen Recording when asked.</p>
+        <ol class="mt-8 grid gap-x-8 gap-y-10 text-ink/75 [counter-reset:step] md:grid-cols-3">
+          <li class="[counter-increment:step]" style="--s:0">
+            <div class="stage" data-stage="apps" aria-hidden="true"><div class="v">
+              <div class="win w-apps"><div class="title"><span class="lights"><i></i><i></i><i></i></span><span>Downloads</span></div>
+                <div class="file f-app"><img src="/icon.png" alt=""><span>Tearsheet</span></div>
+                <div class="file f-folder"><svg class="folder" viewBox="0 0 64 52"><defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc4fa"/><stop offset="1" stop-color="#3a8ee6"/></linearGradient></defs><path d="M4 8a4 4 0 0 1 4-4h15l5 5h28a4 4 0 0 1 4 4v31a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="#5aa7ef"/><path d="M4 16a4 4 0 0 1 4-4h48a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z" fill="url(#fg)"/><path d="M26 39l6-17 6 17M28.4 33h7.2" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Applications</span></div>
+              </div>
+              <div class="win w-perm"><p class="perm-title">Screen &amp; System Audio Recording</p>
+                <div class="perm-row"><img src="/icon.png" alt=""><span>Tearsheet</span><span class="toggle"><i></i></span></div>
+              </div>
+              <svg class="cursor" viewBox="0 0 16 24"><path d="M1 1v18.5l4.6-4.4 3 7.1 3.1-1.3-3-7h6.4z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            </div></div>
+            <p class="mt-5 flex gap-3 before:grid before:size-6 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]"><span class="pt-0.5 text-pretty">Move Tearsheet to Applications, open it, and allow Screen Recording when asked.</span></p>
           </li>
-          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]" style="--s:1">
-            <p class="pt-0.5 text-pretty">In System Settings › Keyboard › Keyboard Shortcuts › Screenshots, turn off both “selected area” shortcuts so ⇧⌘4 reaches Tearsheet.</p>
+          <li class="[counter-increment:step]" style="--s:1">
+            <div class="stage" data-stage="keys" aria-hidden="true"><div class="v">
+              <div class="win w-keys"><div class="title"><span class="lights"><i></i><i></i><i></i></span><span>Keyboard Shortcuts</span></div>
+                <p class="section">Screenshots</p>
+                <div class="row muted"><span class="box"><svg viewBox="0 0 12 12"><path d="M2.6 6.3 5 8.6l4.4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="label">Save picture of screen as a file</span><span class="keys">⇧⌘3</span></div>
+                <div class="row r-save"><span class="box"><svg viewBox="0 0 12 12"><path d="M2.6 6.3 5 8.6l4.4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="label">Save picture of selected area as a file</span><span class="keys">⇧⌘4</span></div>
+                <div class="row r-copy"><span class="box"><svg viewBox="0 0 12 12"><path d="M2.6 6.3 5 8.6l4.4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="label">Copy picture of selected area to the clipboard</span><span class="keys">⌃⇧⌘4</span></div>
+                <div class="row muted"><span class="box"><svg viewBox="0 0 12 12"><path d="M2.6 6.3 5 8.6l4.4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="label">Screenshot and recording options</span><span class="keys">⇧⌘5</span></div>
+              </div>
+              <svg class="cursor" viewBox="0 0 16 24"><path d="M1 1v18.5l4.6-4.4 3 7.1 3.1-1.3-3-7h6.4z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            </div></div>
+            <p class="mt-5 flex gap-3 before:grid before:size-6 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]"><span class="pt-0.5 text-pretty">In System Settings › Keyboard › Keyboard Shortcuts › Screenshots, turn off both “selected area” shortcuts so ⇧⌘4 reaches Tearsheet.</span></p>
           </li>
-          <li class="flex gap-4 [counter-increment:step] before:grid before:size-7 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]" style="--s:2">
-            <p class="pt-0.5 text-pretty">To extract images, turn on Allow JavaScript from Apple Events: in Chrome under View › Developer, in Safari under Develop.</p>
+          <li class="[counter-increment:step]" style="--s:2">
+            <div class="stage" data-stage="menu" aria-hidden="true"><div class="v">
+              <div class="menubar"><span class="m-view">View</span><span>History</span><span>Bookmarks</span><span>Profiles</span><span>Tab</span><span>Window</span></div>
+              <div class="menu m-main"><span>Reload This Page</span><span>Enter Full Screen</span><hr><span class="m-dev">Developer<b>›</b></span></div>
+              <div class="menu m-sub"><span>View Source</span><span>Developer Tools</span><span>JavaScript Console</span><hr><span class="m-allow"><em><svg viewBox="0 0 12 12"><path d="M2.6 6.3 5 8.6l4.4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></em>Allow JavaScript from Apple Events</span></div>
+              <svg class="cursor" viewBox="0 0 16 24"><path d="M1 1v18.5l4.6-4.4 3 7.1 3.1-1.3-3-7h6.4z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            </div></div>
+            <p class="mt-5 flex gap-3 before:grid before:size-6 before:shrink-0 before:place-items-center before:rounded-full before:bg-ink before:text-small before:font-semibold before:text-paper before:tabular-nums before:content-[counter(step)]"><span class="pt-0.5 text-pretty">To extract images, turn on Allow JavaScript from Apple Events: in Chrome under View › Developer, in Safari under Develop.</span></p>
           </li>
         </ol>
       </div>

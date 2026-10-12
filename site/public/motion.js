@@ -175,8 +175,48 @@ const reveal = new IntersectionObserver(
       if (!entry.isIntersecting) continue;
       entry.target.setAttribute("data-seen", "");
       reveal.unobserve(entry.target);
+      if (entry.target.matches(".proof")) proofSeenAt = performance.now();
     }
   },
   { rootMargin: "0px 0px -12% 0px" },
 );
 document.querySelectorAll("[data-reveal]").forEach((el) => reveal.observe(el));
+
+// Setup vignettes ---------------------------------------------------------------
+
+const stages = [...document.querySelectorAll("[data-stage]")];
+
+function playStage(stage) {
+  stage.removeAttribute("data-play");
+  void stage.offsetWidth;
+  stage.setAttribute("data-play", "");
+}
+
+// Each step acts itself out once it is in view: after the panel has unrolled,
+// and in turn when several arrive together, as they do side by side.
+let proofSeenAt = null;
+let nextSlot = 0;
+const stageWatch = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      stageWatch.unobserve(entry.target);
+      const now = performance.now();
+      const at = still ? now : Math.max(now, (proofSeenAt ?? now) + 700, nextSlot);
+      nextSlot = at + 900;
+      setTimeout(() => playStage(entry.target), at - now);
+    }
+  },
+  { threshold: 0.6 },
+);
+stages.forEach((stage) => stageWatch.observe(stage));
+
+// Hovering a finished vignette plays it again.
+const finePointer = matchMedia("(hover: hover) and (pointer: fine)");
+for (const stage of stages) {
+  stage.closest("li").addEventListener("pointerenter", () => {
+    if (still || !finePointer.matches || !stage.hasAttribute("data-play")) return;
+    const running = stage.getAnimations({ subtree: true }).some((a) => a.playState === "running");
+    if (!running) playStage(stage);
+  });
+}

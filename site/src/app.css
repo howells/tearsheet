@@ -260,6 +260,315 @@ li[data-pressing] .key {
   translate: 0 10px;
 }
 
+/* Setup vignettes. Each step acts itself out once, in miniature light-mode
+   macOS, when the panel comes into view; hovering replays it. The stage is
+   drawn on a 30 × 22.5em grid, where 1em is a thirtieth of its width. */
+.stage {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  container-type: inline-size;
+  overflow: hidden;
+  border-radius: var(--radius-key);
+  background: linear-gradient(180deg, #e9e4db, #e2dcd1);
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06);
+}
+.stage .v {
+  position: absolute;
+  inset: 0;
+  font: 400 calc(100cqi / 30) / 1.2 var(--font-sans);
+  color: #1d1d1f;
+}
+.stage .v > * {
+  position: absolute;
+}
+.stage .win {
+  border-radius: 0.9em;
+  background: #fff;
+  box-shadow:
+    0 0 0 0.05em rgb(0 0 0 / 0.12),
+    0 1.2em 2.4em -0.8em rgb(0 0 0 / 0.3);
+}
+.stage .title {
+  display: flex;
+  align-items: center;
+  height: 2.4em;
+  padding-inline: 0.9em;
+  border-bottom: 0.05em solid rgb(0 0 0 / 0.08);
+  font-size: 1em;
+  color: #6e6e73;
+}
+.stage .title > span:last-child {
+  flex: 1;
+  margin-right: 3em;
+  text-align: center;
+  font-weight: 600;
+}
+.stage .lights {
+  display: flex;
+  gap: 0.4em;
+}
+.stage .lights i {
+  width: 0.75em;
+  height: 0.75em;
+  border-radius: 50%;
+  background: #ff5f57;
+}
+.stage .lights i:nth-child(2) { background: #febc2e; }
+.stage .lights i:nth-child(3) { background: #28c840; }
+.stage .cursor {
+  top: 0;
+  left: 0;
+  width: 1.5em;
+  height: 2.25em;
+  transform-origin: 0.1em 0.1em;
+  filter: drop-shadow(0 0.15em 0.2em rgb(0 0 0 / 0.3));
+  opacity: 0;
+}
+
+/* 1. Into Applications, then allow Screen Recording. */
+.w-apps { left: 2em; top: 2.2em; width: 26em; height: 14.5em; }
+.file {
+  position: absolute;
+  top: 4.4em;
+  display: grid;
+  justify-items: center;
+  gap: 0.5em;
+  width: 7em;
+  font-size: 1em;
+}
+.file img, .file .folder { width: 5em; height: 5em; }
+.file .folder { padding: 0.35em; }
+.f-app { left: 2.5em; }
+.f-folder { left: 15.5em; }
+.w-perm { left: 3.5em; top: 7.5em; width: 23em; padding: 1.2em 1.3em; opacity: 0; }
+.perm-title { font-weight: 600; font-size: 1.05em; }
+.perm-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  margin-top: 1em;
+  padding-top: 1em;
+  border-top: 0.05em solid rgb(0 0 0 / 0.08);
+}
+.perm-row img { width: 2.2em; height: 2.2em; }
+.perm-row span:not(.toggle) { flex: 1; }
+.toggle {
+  position: relative;
+  width: 3em;
+  height: 1.75em;
+  border-radius: 1em;
+  background: #e3e3e6;
+}
+.toggle i {
+  position: absolute;
+  top: 0.15em;
+  left: 0.15em;
+  width: 1.45em;
+  height: 1.45em;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0.1em 0.25em rgb(0 0 0 / 0.25);
+}
+[data-stage="apps"][data-play] .f-app { animation: apps-drag 3.6s var(--ease-in-out-quart) both; }
+[data-stage="apps"][data-play] .f-app span { animation: apps-label 3.6s ease both; }
+[data-stage="apps"][data-play] .f-folder { animation: apps-bump 3.6s var(--ease-out-quint) both; }
+[data-stage="apps"][data-play] .w-apps { animation: apps-dim 3.6s ease both; }
+[data-stage="apps"][data-play] .w-perm { animation: apps-perm 3.6s var(--ease-out-quint) both; }
+[data-stage="apps"][data-play] .toggle { animation: toggle-track 3.6s ease both; }
+[data-stage="apps"][data-play] .toggle i { animation: toggle-knob 3.6s var(--ease-out-quint) both; }
+[data-stage="apps"][data-play] .cursor { animation: apps-cursor 3.6s var(--ease-in-out-quart) both; }
+@keyframes apps-drag {
+  0%, 15% { translate: 0 0; scale: 1; opacity: 1; }
+  40% { translate: 13em 0; scale: 0.55; opacity: 1; }
+  46%, 100% { translate: 13em 0; scale: 0.4; opacity: 0; }
+}
+@keyframes apps-label {
+  0%, 14% { opacity: 1; }
+  20%, 100% { opacity: 0; }
+}
+@keyframes apps-bump {
+  0%, 42% { scale: 1; }
+  47% { scale: 1.08; }
+  55%, 100% { scale: 1; }
+}
+@keyframes apps-dim {
+  0%, 52% { opacity: 1; }
+  62%, 100% { opacity: 0.55; }
+}
+@keyframes apps-perm {
+  0%, 54% { opacity: 0; translate: 0 0.8em; scale: 0.96; }
+  66%, 100% { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes toggle-track {
+  0%, 75% { background: #e3e3e6; }
+  80%, 100% { background: #34c759; }
+}
+@keyframes toggle-knob {
+  0%, 75% { translate: 0 0; }
+  82%, 100% { translate: 1.25em 0; }
+}
+@keyframes apps-cursor {
+  0% { translate: 8em 9.1em; opacity: 0; scale: 1; }
+  6% { opacity: 1; }
+  11% { scale: 1; }
+  14% { translate: 8em 9.1em; scale: 0.88; }
+  40% { translate: 21em 9.1em; scale: 0.88; }
+  43% { translate: 21em 9.1em; scale: 1; }
+  58% { translate: 21em 9.1em; }
+  71% { translate: 23.7em 13.2em; scale: 1; }
+  74% { scale: 0.88; }
+  78% { translate: 23.7em 13.2em; scale: 1; opacity: 1; }
+  90%, 100% { translate: 23.7em 13.2em; opacity: 0; }
+}
+
+/* 2. Untick both "selected area" shortcuts. */
+.w-keys { left: 0.9em; top: 1.8em; width: 28.2em; height: 19em; }
+.w-keys .section { margin: 1em 1.2em 0.4em; font-weight: 600; font-size: 1em; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  height: 2.6em;
+  margin-inline: 1.2em;
+  border-top: 0.05em solid rgb(0 0 0 / 0.06);
+  font-size: 0.86em;
+}
+.row .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .keys { color: #6e6e73; font-variant-numeric: tabular-nums; }
+.row.muted { color: #8e8e93; }
+.box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 0.3em;
+  background: #0a7aff;
+  color: #fff;
+}
+.box svg { width: 1em; height: 1em; }
+.row.muted .box { background: #9ec5f5; }
+[data-stage="keys"][data-play] .r-save .box { animation: untick-a 3.2s ease both; }
+[data-stage="keys"][data-play] .r-copy .box { animation: untick-b 3.2s ease both; }
+[data-stage="keys"][data-play] .r-save .keys,
+[data-stage="keys"][data-play] .r-copy .keys { animation: keys-off 3.2s ease both; }
+[data-stage="keys"][data-play] .cursor { animation: keys-cursor 3.2s var(--ease-in-out-quart) both; }
+@keyframes untick-a {
+  0%, 38% { background: #0a7aff; color: #fff; box-shadow: none; }
+  42%, 100% { background: #fff; color: transparent; box-shadow: inset 0 0 0 0.08em #c7c7cc; }
+}
+@keyframes untick-b {
+  0%, 61% { background: #0a7aff; color: #fff; box-shadow: none; }
+  65%, 100% { background: #fff; color: transparent; box-shadow: inset 0 0 0 0.08em #c7c7cc; }
+}
+@keyframes keys-off {
+  0%, 70% { color: #6e6e73; }
+  80%, 100% { color: #c7c7cc; }
+}
+@keyframes keys-cursor {
+  0% { translate: 21em 20em; opacity: 0; scale: 1; }
+  8% { opacity: 1; }
+  33% { translate: 2.5em 10.2em; scale: 1; }
+  37% { scale: 0.88; }
+  41% { translate: 2.5em 10.2em; scale: 1; }
+  57% { translate: 2.5em 12.45em; scale: 1; }
+  60% { scale: 0.88; }
+  64% { translate: 2.5em 12.45em; scale: 1; opacity: 1; }
+  82%, 100% { translate: 4em 14.5em; opacity: 0; }
+}
+
+/* 3. View › Developer › Allow JavaScript from Apple Events. */
+.menubar {
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  gap: 0.3em;
+  height: 2.2em;
+  padding-inline: 0.6em;
+  align-items: center;
+  background: rgb(255 255 255 / 0.75);
+  box-shadow: 0 0.05em 0 rgb(0 0 0 / 0.08);
+  font-weight: 500;
+}
+.menubar span { padding: 0.2em 0.55em; border-radius: 0.35em; }
+.menu {
+  display: grid;
+  padding: 0.35em;
+  border-radius: 0.7em;
+  background: rgb(246 246 246 / 0.96);
+  box-shadow:
+    0 0 0 0.05em rgb(0 0 0 / 0.14),
+    0 0.8em 2em -0.4em rgb(0 0 0 / 0.3);
+  font-size: 0.9em;
+  opacity: 0;
+  transform-origin: top left;
+}
+.menu span {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  height: 1.9em;
+  padding-inline: 0.6em 0.8em;
+  border-radius: 0.35em;
+  white-space: nowrap;
+}
+.menu hr { margin: 0.3em 0.6em; border: 0; border-top: 0.05em solid rgb(0 0 0 / 0.12); }
+.menu b { margin-left: auto; font-weight: 400; color: inherit; }
+.menu em { display: grid; width: 0.95em; height: 0.95em; opacity: 0; }
+.menu em svg { width: 100%; }
+.m-main { left: 0.35em; top: 2.4em; width: 9.8em; }
+.m-sub { left: 9.9em; top: 6.4em; width: 19.6em; }
+.m-sub span { padding-left: 0.4em; }
+.m-sub span:not(.m-allow)::before { content: ""; width: 0.95em; }
+[data-stage="menu"][data-play] .m-view { animation: hl-view 3.4s ease both; }
+[data-stage="menu"][data-play] .m-main { animation: menu-main 3.4s var(--ease-out-quint) both; }
+[data-stage="menu"][data-play] .m-dev { animation: hl-dev 3.4s ease both; }
+[data-stage="menu"][data-play] .m-sub { animation: menu-sub 3.4s var(--ease-out-quint) both; }
+[data-stage="menu"][data-play] .m-allow { animation: hl-allow 3.4s linear both; }
+[data-stage="menu"][data-play] .m-allow em { animation: tick 3.4s ease both; }
+[data-stage="menu"][data-play] .cursor { animation: menu-cursor 3.4s var(--ease-in-out-quart) both; }
+@keyframes hl-view {
+  0%, 18% { background: transparent; color: inherit; }
+  20%, 100% { background: rgb(0 0 0 / 0.1); color: inherit; }
+}
+@keyframes menu-main {
+  0%, 20% { opacity: 0; scale: 0.97; }
+  25%, 100% { opacity: 1; scale: 1; }
+}
+@keyframes hl-dev {
+  0%, 36% { background: transparent; color: inherit; }
+  38%, 100% { background: #0a7aff; color: #fff; }
+}
+@keyframes menu-sub {
+  0%, 40% { opacity: 0; scale: 0.97; }
+  45%, 100% { opacity: 1; scale: 1; }
+}
+/* Hover, then the click blinks the item the way macOS does. */
+@keyframes hl-allow {
+  0%, 63% { background: transparent; color: inherit; }
+  64%, 71% { background: #0a7aff; color: #fff; }
+  72%, 74% { background: transparent; color: inherit; }
+  75%, 100% { background: #0a7aff; color: #fff; }
+}
+@keyframes tick {
+  0%, 72% { opacity: 0; }
+  74%, 100% { opacity: 1; }
+}
+@keyframes menu-cursor {
+  0% { translate: 14em 21em; opacity: 0; scale: 1; }
+  6% { opacity: 1; }
+  16% { translate: 2.4em 1.15em; scale: 1; }
+  18% { scale: 0.88; }
+  20% { translate: 2.4em 1.15em; scale: 1; }
+  34% { translate: 5em 7.4em; }
+  44% { translate: 11.5em 7.4em; }
+  62% { translate: 16em 12.7em; scale: 1; }
+  68% { scale: 0.88; }
+  71% { translate: 16em 12.7em; scale: 1; opacity: 1; }
+  88%, 100% { translate: 16.5em 14em; opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .intro,
   h1 .word,
@@ -270,6 +579,10 @@ li[data-pressing] .key {
   }
   li[data-pressing] .key {
     animation: none;
+  }
+  .stage[data-play] * {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
   }
   [data-reveal],
   .proof li {
