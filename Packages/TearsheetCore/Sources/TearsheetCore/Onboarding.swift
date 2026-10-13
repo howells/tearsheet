@@ -71,11 +71,14 @@ public enum ScreenRecordingStatus: Equatable, Sendable {
 
 /// Whether Tearsheet can capture: macOS's answer, proved by a real screenshot. A few
 /// failures in a row mean Tearsheet needs reopening, and then it stops trying. Any change
-/// of permission means capture has to be proved again.
+/// of permission means capture has to be proved again, and a screenshot started before
+/// the change proves nothing.
 public struct CaptureCheck: Equatable, Sendable {
     public private(set) var granted: Bool
     public private(set) var worked: Bool?
     public private(set) var attempts = 0
+    /// Counts permission changes; a probe's result counts only in the generation it started in.
+    public private(set) var generation = 0
     public let limit: Int
 
     public init(granted: Bool, limit: Int = 3) {
@@ -91,13 +94,19 @@ public struct CaptureCheck: Equatable, Sendable {
         if granted != self.granted {
             worked = nil
             attempts = 0
+            generation += 1
         }
         self.granted = granted
     }
 
-    public mutating func probeStarted() { attempts += 1 }
+    /// Returns the generation to hand back with the result.
+    public mutating func probeStarted() -> Int {
+        attempts += 1
+        return generation
+    }
 
-    public mutating func probe(succeeded: Bool) {
+    public mutating func probe(succeeded: Bool, generation: Int) {
+        guard generation == self.generation else { return }
         if succeeded {
             worked = true
         } else if attempts >= limit {
@@ -111,4 +120,8 @@ extension Onboarding {
     public static func needsScreenRecordingStep(_ step: OnboardingStep, status: ScreenRecordingStatus) -> Bool {
         step != .screenRecording && (status == .notAllowed || status == .needsReopen)
     }
+
+    /// Setup is finished only once capture is proved; a run resumed at Ready can't be
+    /// finished while the check is pending, or a failure would never get its Reopen.
+    public static func canFinish(status: ScreenRecordingStatus) -> Bool { status == .allowed }
 }

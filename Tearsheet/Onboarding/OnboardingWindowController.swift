@@ -285,7 +285,10 @@ final class OnboardingModel {
         }
     }
 
+    var canFinish: Bool { Onboarding.canFinish(status: recordingStatus) }
+
     func done() {
+        guard canFinish else { return }
         record.isFinished = true
         finish()
     }
@@ -308,7 +311,7 @@ final class OnboardingModel {
     private func checkCapture() {
         guard !isSnapshotting, let window else { return }
         isSnapshotting = true
-        captureCheck.probeStarted()
+        let generation = captureCheck.probeStarted()
         // The screen the window opened on may since have been unplugged.
         let screen = NSScreen.screens.contains(self.screen) ? self.screen : NSScreen.main ?? self.screen
         Task { @MainActor in
@@ -316,7 +319,7 @@ final class OnboardingModel {
             let shots = try? await ScreenGrabber.snapshot(screens: [screen], excludingWindowNumbers: [window.windowNumber])
             guard !isStopped else { return }
             // An empty result means nothing was captured, which is no proof.
-            captureCheck.probe(succeeded: shots?.isEmpty == false)
+            captureCheck.probe(succeeded: shots?.isEmpty == false, generation: generation)
             // Until the limit the next poll tries again; then the Reopen row stands.
             guard recordingStatus == .allowed else { return returnToRecordingIfNeeded() }
             // The stage develops the moment Tearsheet can capture, which after macOS

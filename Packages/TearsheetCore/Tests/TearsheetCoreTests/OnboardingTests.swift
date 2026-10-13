@@ -76,8 +76,8 @@ struct CaptureCheckTests {
         var check = CaptureCheck(granted: true)
         #expect(check.shouldProbe)
         #expect(check.status == .checking)
-        check.probeStarted()
-        check.probe(succeeded: true)
+        _ = check.probeStarted()
+        check.probe(succeeded: true, generation: check.generation)
         #expect(check.status == .allowed)
         #expect(!check.shouldProbe)
     }
@@ -85,13 +85,13 @@ struct CaptureCheckTests {
     @Test func retriesAFewFailuresThenNeedsReopening() {
         var check = CaptureCheck(granted: true, limit: 3)
         for _ in 1...2 {
-            check.probeStarted()
-            check.probe(succeeded: false)
+            _ = check.probeStarted()
+            check.probe(succeeded: false, generation: check.generation)
             #expect(check.status == .checking)
             #expect(check.shouldProbe)
         }
-        check.probeStarted()
-        check.probe(succeeded: false)
+        _ = check.probeStarted()
+        check.probe(succeeded: false, generation: check.generation)
         #expect(check.status == .needsReopen)
         // No more screenshots once Reopen is the answer.
         #expect(!check.shouldProbe)
@@ -105,8 +105,8 @@ struct CaptureCheckTests {
 
     @Test func withdrawingAndRegrantingProvesCaptureAgain() {
         var check = CaptureCheck(granted: true)
-        check.probeStarted()
-        check.probe(succeeded: true)
+        _ = check.probeStarted()
+        check.probe(succeeded: true, generation: check.generation)
         check.update(granted: false)
         #expect(check.status == .notAllowed)
         check.update(granted: true)
@@ -116,12 +116,42 @@ struct CaptureCheckTests {
 
     @Test func aFailedCheckIsForgottenWhenPermissionChanges() {
         var check = CaptureCheck(granted: true, limit: 1)
-        check.probeStarted()
-        check.probe(succeeded: false)
+        _ = check.probeStarted()
+        check.probe(succeeded: false, generation: check.generation)
         #expect(check.status == .needsReopen)
         check.update(granted: false)
         check.update(granted: true)
         #expect(check.shouldProbe)
+    }
+
+    @Test func aResultFromBeforeAPermissionChangeIsIgnored() {
+        var check = CaptureCheck(granted: true)
+        let started = check.probeStarted()
+        // Revoked and granted again while that screenshot was in flight.
+        check.update(granted: false)
+        check.update(granted: true)
+        check.probe(succeeded: true, generation: started)
+        #expect(check.status == .checking)
+        #expect(check.shouldProbe)
+    }
+
+    @Test func finishingWaitsForProvenCapture() {
+        // A run resumed at Ready shows Ready while the check is pending, but can't be finished from it.
+        #expect(!Onboarding.needsScreenRecordingStep(.ready, status: .checking))
+        #expect(!Onboarding.canFinish(status: .checking))
+        #expect(!Onboarding.canFinish(status: .needsReopen))
+        #expect(!Onboarding.canFinish(status: .notAllowed))
+        #expect(Onboarding.canFinish(status: .allowed))
+    }
+
+    @Test func doneBeforeTheFailureLimitStaysUnfinishable() {
+        var check = CaptureCheck(granted: true, limit: 3)
+        _ = check.probeStarted()
+        check.probe(succeeded: false, generation: check.generation)
+        #expect(!Onboarding.canFinish(status: check.status))
+        _ = check.probeStarted()
+        check.probe(succeeded: true, generation: check.generation)
+        #expect(Onboarding.canFinish(status: check.status))
     }
 
     @Test func laterStepsGoBackWhenCaptureIsLost() {

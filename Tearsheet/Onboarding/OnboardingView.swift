@@ -179,6 +179,7 @@ struct OnboardingView: View {
             case .ready:
                 DarkroomButtonView(title: "Done", style: .primary, isDefault: true, action: model.done)
                     .fixedSize()
+                    .disabled(!model.canFinish)
             }
         }
         .frame(height: 44)
