@@ -157,13 +157,15 @@ struct OnboardingView: View {
             Spacer()
             switch model.step {
             case .screenRecording:
-                DarkroomButtonView(title: "Continue", style: .primary, isDefault: true, isEnabled: model.recordingStatus == .allowed, action: model.advance)
+                DarkroomButtonView(title: "Continue", style: .primary, isDefault: true, action: model.advance)
                     .fixedSize()
+                    .disabled(model.recordingStatus != .allowed)
             case .shortcut:
                 DarkroomButtonView(title: "Keep macOS screenshots", style: .secondary, action: model.keepMacOSShortcut)
                     .fixedSize()
-                DarkroomButtonView(title: "Use ⇧⌘4 for Tearsheet", style: .primary, isDefault: true, isEnabled: model.macOSClaimsShortcut, action: model.useShortcut)
+                DarkroomButtonView(title: "Use ⇧⌘4 for Tearsheet", style: .primary, isDefault: true, action: model.useShortcut)
                     .fixedSize()
+                    .disabled(!model.macOSClaimsShortcut)
             case .firstCapture:
                 // Quiet until there's a capture, so the capture is the thing to do first.
                 DarkroomButtonView(title: "Continue", style: model.captured == nil ? .secondary : .primary, isDefault: model.captured != nil, action: model.advance)

@@ -23,6 +23,8 @@ enum DarkroomWindow {
         window.backgroundColor = Darkroom.graphite
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
+        // Size to the content before centring, or it centres as if it had none.
+        window.setContentSize(hosting.view.fittingSize)
         window.center()
         return window
     }
@@ -47,7 +49,6 @@ struct DarkroomButtonView: NSViewRepresentable {
     var style: DarkroomButton.Style
     /// Return presses it.
     var isDefault = false
-    var isEnabled = true
     var action: () -> Void
 
     func makeNSView(context: Context) -> DarkroomButton {
@@ -58,7 +59,8 @@ struct DarkroomButtonView: NSViewRepresentable {
         button.title = title
         button.handler = action
         button.isDefault = isDefault
-        button.isEnabled = isEnabled
+        // Follows `.disabled(_:)`, as SwiftUI's own buttons do.
+        button.isEnabled = context.environment.isEnabled
     }
 }
 

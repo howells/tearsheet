@@ -33,6 +33,8 @@ final class OnboardingWindowController: NSObject, NSWindowDelegate {
         }
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
+        // macOS may decline to activate an app opened in the background; the first run shows regardless.
+        window?.orderFrontRegardless()
         model?.start()
     }
 
