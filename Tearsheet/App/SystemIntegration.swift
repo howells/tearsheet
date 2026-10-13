@@ -86,7 +86,9 @@ enum SystemScreenshotShortcut {
 enum LaunchAtLogin {
     static var isEnabled: Bool { SMAppService.mainApp.status == .enabled }
 
+    /// The person's own choice, which the first-launch default never overrides afterwards.
     static func set(_ enabled: Bool) throws {
+        Preferences.didConfigureLaunchAtLogin = true
         if enabled {
             try SMAppService.mainApp.register()
         } else {

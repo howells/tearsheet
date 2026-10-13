@@ -55,7 +55,7 @@ extension Onboarding.Facts {
 }
 
 /// The stage: the desktop from the film, an ocean with a photo open on it, laid out
-/// as a 1440-point-wide display in the shape of the screen the window opened on.
+/// as a 1440-point-wide display in roughly the shape of the screen the window opened on.
 /// The scene is drawn in its own points and scaled; cards, the selection and the
 /// menu are placed in stage points.
 struct StageScene {
@@ -77,10 +77,10 @@ struct StageScene {
         displayID = screen.displayID
         frame = screen.frame
         backingScale = screen.backingScaleFactor
-        // As wide as the panel allows, no taller than 320 points for a portrait display.
-        var size = CGSize(width: 488, height: 488 * frame.height / frame.width)
-        if size.height > 320 { size = CGSize(width: 320 * frame.width / frame.height, height: 320) }
-        self.size = CGSize(width: size.width.rounded(), height: size.height.rounded())
+        // The screen's shape, held between 16:9 and 16:10 so a portrait or ultrawide
+        // display still leaves room for the shortcut menu on the last step.
+        let aspect = min(max(frame.height / frame.width, 9.0 / 16), 10.0 / 16)
+        size = CGSize(width: 488, height: (488 * aspect).rounded())
     }
 
     /// Stage points per scene point.
@@ -153,10 +153,9 @@ final class OnboardingModel {
     private(set) var record: OnboardingRecord { didSet { Preferences.onboarding = record } }
 
     // Screen recording
-    private(set) var granted = ScreenRecordingPermission.isGranted
-    private(set) var captureWorked: Bool?
+    private(set) var captureCheck = CaptureCheck(granted: ScreenRecordingPermission.isGranted)
     private(set) var hasAsked = false
-    var recordingStatus: ScreenRecordingStatus { ScreenRecordingStatus(granted: granted, captureWorked: captureWorked) }
+    var recordingStatus: ScreenRecordingStatus { captureCheck.status }
 
     // Stage
     let stage: StageScene
@@ -186,6 +185,9 @@ final class OnboardingModel {
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var demoTask: Task<Void, Never>?
     @ObservationIgnored private var isSnapshotting = false
+    /// Set once the window has closed, so work still in flight leaves the model alone.
+    @ObservationIgnored private var isStopped = false
+    @ObservationIgnored private var motionObserver: NSObjectProtocol?
 
     private var reduced: Bool { Darkroom.Motion.reduced }
 
@@ -196,6 +198,9 @@ final class OnboardingModel {
         stage = StageScene(screen)
         captureRegion = capture
         self.finish = finish
+        // A run that resumes at Ready gets the same login default as one that walks there,
+        // before the toggle reads it.
+        if step == .ready { LaunchAtLogin.configureOnFirstInstalledLaunch() }
     }
 
     // MARK: Lifetime
@@ -215,6 +220,10 @@ final class OnboardingModel {
                 MainActor.assumeIsolated { self?.landed(capture) }
             },
         ]
+        // Reduce Motion switched on mid-demonstration puts it straight at its end.
+        motionObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { if Darkroom.Motion.reduced { self?.finishDemo() } }
+        }
         poll = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh() }
         }
@@ -222,18 +231,31 @@ final class OnboardingModel {
     }
 
     func stop() {
+        isStopped = true
         poll?.invalidate()
         poll = nil
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
         observers = []
+        if let motionObserver { NSWorkspace.shared.notificationCenter.removeObserver(motionObserver) }
+        motionObserver = nil
         demoTask?.cancel()
     }
 
     /// Polls what macOS says now; the permission and the shortcut can change in System Settings.
     private func refresh() {
-        granted = ScreenRecordingPermission.isGranted
+        guard !isStopped else { return }
+        captureCheck.update(granted: ScreenRecordingPermission.isGranted)
         macOSClaimsShortcut = SystemScreenshotShortcut.isEnabled
-        if granted, captureWorked != true { checkCapture() }
+        if captureCheck.shouldProbe { checkCapture() }
+        returnToRecordingIfNeeded()
+    }
+
+    /// Nothing later works without capture, so a run that has lost it, or resumed past the
+    /// step before it worked, goes back to the step that can put it right.
+    private func returnToRecordingIfNeeded() {
+        guard Onboarding.needsScreenRecordingStep(step, status: recordingStatus) else { return }
+        finishDemo()
+        withAnimation(Darkroom.Motion.entrance(reduced ? 0.2 : 0.3)) { step = .screenRecording }
     }
 
     // MARK: Steps
@@ -257,6 +279,7 @@ final class OnboardingModel {
         case .ready:
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(150))
+                guard !isStopped else { return }
                 withAnimation(Darkroom.Motion.entrance(0.2)) { menuShown = true }
             }
         }
@@ -280,26 +303,29 @@ final class OnboardingModel {
 
     func reopen() { ScreenRecordingPermission.relaunch() }
 
-    /// Captures the screen once, and shows nothing of it. If macOS says the permission
-    /// is granted but the capture fails, Tearsheet needs reopening.
+    /// Captures the screen once, and shows nothing of it. If macOS says the permission is
+    /// granted but a few attempts in a row capture nothing, Tearsheet needs reopening.
     private func checkCapture() {
         guard !isSnapshotting, let window else { return }
         isSnapshotting = true
+        captureCheck.probeStarted()
+        // The screen the window opened on may since have been unplugged.
+        let screen = NSScreen.screens.contains(self.screen) ? self.screen : NSScreen.main ?? self.screen
         Task { @MainActor in
             defer { isSnapshotting = false }
-            do {
-                _ = try await ScreenGrabber.snapshot(screens: [screen], excludingWindowNumbers: [window.windowNumber])
-                captureWorked = true
-                // The stage develops the moment Tearsheet can capture, which after macOS
-                // reopens it is a later step.
-                developed = true
-                if step == .shortcut || step == .firstCapture {
-                    // Once the print has mostly come up.
-                    try? await Task.sleep(for: .milliseconds(reduced ? 300 : 1400))
-                    if step == .shortcut || step == .firstCapture { playDemo() }
-                }
-            } catch {
-                captureWorked = false
+            let shots = try? await ScreenGrabber.snapshot(screens: [screen], excludingWindowNumbers: [window.windowNumber])
+            guard !isStopped else { return }
+            // An empty result means nothing was captured, which is no proof.
+            captureCheck.probe(succeeded: shots?.isEmpty == false)
+            // Until the limit the next poll tries again; then the Reopen row stands.
+            guard recordingStatus == .allowed else { return returnToRecordingIfNeeded() }
+            // The stage develops the moment Tearsheet can capture, which after macOS
+            // reopens it is a later step.
+            developed = true
+            if step == .shortcut || step == .firstCapture {
+                // Once the print has mostly come up.
+                try? await Task.sleep(for: .milliseconds(reduced ? 300 : 1400))
+                if !isStopped, step == .shortcut || step == .firstCapture { playDemo() }
             }
         }
     }
@@ -319,7 +345,7 @@ final class OnboardingModel {
         // Long enough to see the status change before the step does.
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(700))
-            if step == .shortcut { advance() }
+            if !isStopped, step == .shortcut { advance() }
         }
     }
 
@@ -346,9 +372,11 @@ final class OnboardingModel {
             withAnimation(Darkroom.Motion.entrance(0.2)) { demo?.dim = 1 }
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
+            if reduced { return finishDemo() }
             withAnimation(Darkroom.Motion.travel(0.9)) { demo?.progress = 1 }
             try? await Task.sleep(for: .milliseconds(1300))
             guard !Task.isCancelled else { return }
+            if reduced { return finishDemo() }
             // The selection becomes the card, then is thrown into the corner.
             demo?.showsSelection = false
             demoCard = card
@@ -411,16 +439,19 @@ final class OnboardingModel {
         }
         var instant = Transaction()
         instant.disablesAnimations = true
-        withTransaction(instant) {
-            captureCard = StageCard(
-                image: NSImage(cgImage: capture.image, size: start.size),
-                pixelWidth: capture.image.width, pixelHeight: capture.image.height,
-                frame: start, opacity: reduced ? 0 : 1, lifted: true
-            )
-        }
+        let card = StageCard(
+            image: NSImage(cgImage: capture.image, size: start.size),
+            pixelWidth: capture.image.width, pixelHeight: capture.image.height,
+            frame: start, opacity: reduced ? 0 : 1, lifted: true
+        )
+        withTransaction(instant) { captureCard = card }
         Task { @MainActor in
             await Task.yield()
-            withAnimation(reduced ? nil : Darkroom.Motion.Spring.settle.animation) { captureCard?.frame = corner }
+            // A later capture, or a closed window, owns the stage now.
+            guard !isStopped, captureCard?.id == card.id else { return }
+            // Read the corner afresh: it may have changed while the card was placed.
+            let destination = stage.thumbnailFrame(pixelWidth: card.pixelWidth, height: card.pixelHeight, corner: self.corner)
+            withAnimation(reduced ? nil : Darkroom.Motion.Spring.settle.animation) { captureCard?.frame = destination }
             withAnimation(Darkroom.Motion.entrance(0.2)) {
                 captureCard?.opacity = 1
                 demoCard?.opacity = 0

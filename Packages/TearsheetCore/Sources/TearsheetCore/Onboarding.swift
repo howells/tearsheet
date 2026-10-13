@@ -68,3 +68,47 @@ public enum ScreenRecordingStatus: Equatable, Sendable {
         }
     }
 }
+
+/// Whether Tearsheet can capture: macOS's answer, proved by a real screenshot. A few
+/// failures in a row mean Tearsheet needs reopening, and then it stops trying. Any change
+/// of permission means capture has to be proved again.
+public struct CaptureCheck: Equatable, Sendable {
+    public private(set) var granted: Bool
+    public private(set) var worked: Bool?
+    public private(set) var attempts = 0
+    public let limit: Int
+
+    public init(granted: Bool, limit: Int = 3) {
+        self.granted = granted
+        self.limit = limit
+    }
+
+    public var status: ScreenRecordingStatus { ScreenRecordingStatus(granted: granted, captureWorked: worked) }
+
+    public var shouldProbe: Bool { granted && worked == nil && attempts < limit }
+
+    public mutating func update(granted: Bool) {
+        if granted != self.granted {
+            worked = nil
+            attempts = 0
+        }
+        self.granted = granted
+    }
+
+    public mutating func probeStarted() { attempts += 1 }
+
+    public mutating func probe(succeeded: Bool) {
+        if succeeded {
+            worked = true
+        } else if attempts >= limit {
+            worked = false
+        }
+    }
+}
+
+extension Onboarding {
+    /// A later step without working capture goes back to Screen Recording, where it can be put right.
+    public static func needsScreenRecordingStep(_ step: OnboardingStep, status: ScreenRecordingStatus) -> Bool {
+        step != .screenRecording && (status == .notAllowed || status == .needsReopen)
+    }
+}

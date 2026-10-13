@@ -70,3 +70,65 @@ struct OnboardingTests {
         #expect(ScreenRecordingStatus(granted: true, captureWorked: false) == .needsReopen)
     }
 }
+
+struct CaptureCheckTests {
+    @Test func probesOnceGrantedThenAllows() {
+        var check = CaptureCheck(granted: true)
+        #expect(check.shouldProbe)
+        #expect(check.status == .checking)
+        check.probeStarted()
+        check.probe(succeeded: true)
+        #expect(check.status == .allowed)
+        #expect(!check.shouldProbe)
+    }
+
+    @Test func retriesAFewFailuresThenNeedsReopening() {
+        var check = CaptureCheck(granted: true, limit: 3)
+        for _ in 1...2 {
+            check.probeStarted()
+            check.probe(succeeded: false)
+            #expect(check.status == .checking)
+            #expect(check.shouldProbe)
+        }
+        check.probeStarted()
+        check.probe(succeeded: false)
+        #expect(check.status == .needsReopen)
+        // No more screenshots once Reopen is the answer.
+        #expect(!check.shouldProbe)
+    }
+
+    @Test func noProbeWithoutPermission() {
+        let check = CaptureCheck(granted: false)
+        #expect(!check.shouldProbe)
+        #expect(check.status == .notAllowed)
+    }
+
+    @Test func withdrawingAndRegrantingProvesCaptureAgain() {
+        var check = CaptureCheck(granted: true)
+        check.probeStarted()
+        check.probe(succeeded: true)
+        check.update(granted: false)
+        #expect(check.status == .notAllowed)
+        check.update(granted: true)
+        #expect(check.status == .checking)
+        #expect(check.shouldProbe)
+    }
+
+    @Test func aFailedCheckIsForgottenWhenPermissionChanges() {
+        var check = CaptureCheck(granted: true, limit: 1)
+        check.probeStarted()
+        check.probe(succeeded: false)
+        #expect(check.status == .needsReopen)
+        check.update(granted: false)
+        check.update(granted: true)
+        #expect(check.shouldProbe)
+    }
+
+    @Test func laterStepsGoBackWhenCaptureIsLost() {
+        #expect(Onboarding.needsScreenRecordingStep(.firstCapture, status: .needsReopen))
+        #expect(Onboarding.needsScreenRecordingStep(.ready, status: .notAllowed))
+        #expect(!Onboarding.needsScreenRecordingStep(.shortcut, status: .checking))
+        #expect(!Onboarding.needsScreenRecordingStep(.shortcut, status: .allowed))
+        #expect(!Onboarding.needsScreenRecordingStep(.screenRecording, status: .needsReopen))
+    }
+}
