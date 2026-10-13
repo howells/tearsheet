@@ -196,21 +196,44 @@ final class ThumbnailView: NSView, NSDraggingSource {
         switch event.phase {
         case .began:
             swipeOffset = 0
+            isSwiping = true
         case .changed:
+            guard isSwiping else { return }
             // Positive means the fingers moved right, whichever scrolling direction is set.
             swipeOffset += event.isDirectionInvertedFromDevice ? event.scrollingDeltaX : -event.scrollingDeltaX
             // Free toward the screen edge, a little give the other way.
             let outward = swipeOffset * panel.edgeDirection
             panel.swipe(to: max(outward, -12) * panel.edgeDirection)
+            finishSwipeIfQuiet()
         case .ended, .cancelled:
-            if swipeOffset * panel.edgeDirection > 60 {
-                panel.dismiss(swiped: true)
-            } else {
-                panel.settleSwipe()
-            }
-            swipeOffset = 0
+            finishSwipe()
         default:
             break
         }
+    }
+
+    private var isSwiping = false
+    private var swipeWatch: Timer?
+
+    /// The card can slide out from under a pointer that stays put, and the gesture's
+    /// last event then goes to whatever is beneath. A swipe that goes quiet finishes anyway.
+    private func finishSwipeIfQuiet() {
+        swipeWatch?.invalidate()
+        swipeWatch = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
+            MainActor.assumeIsolated { self?.finishSwipe() }
+        }
+    }
+
+    private func finishSwipe() {
+        swipeWatch?.invalidate()
+        swipeWatch = nil
+        guard isSwiping, let panel else { return }
+        isSwiping = false
+        if swipeOffset * panel.edgeDirection > 60 {
+            panel.dismiss(swiped: true)
+        } else {
+            panel.settleSwipe()
+        }
+        swipeOffset = 0
     }
 }
