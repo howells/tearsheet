@@ -17,11 +17,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         item.menu = menu
     }
 
-    /// Where the icon sits in the menu bar, in screen coordinates.
-    var iconFrame: CGRect? { item.button?.window?.frame }
-
     /// The app icon reduced to one colour: a print with its corner turned up.
-    private static let glyph: NSImage = {
+    static let glyph: NSImage = {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
             NSColor.black.set()
             let sheet = NSBezierPath()

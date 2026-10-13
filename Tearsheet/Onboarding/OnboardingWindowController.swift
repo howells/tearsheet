@@ -2,19 +2,17 @@ import AppKit
 import SwiftUI
 import TearsheetCore
 
-/// The first run: one window, four steps, over a miniature of the screen it opens on.
+/// The first run: one window, four steps, over a miniature desktop where each step plays out.
 /// Closing it part way keeps what's done; the next launch, or Set Up Tearsheet…
 /// in the menu, picks up at the first step not yet settled.
 final class OnboardingWindowController: NSObject, NSWindowDelegate {
     var onFinish: (() -> Void)?
     private let capture: () -> Void
-    private let iconFrame: () -> CGRect?
     private var window: NSWindow?
     private var model: OnboardingModel?
 
-    init(capture: @escaping () -> Void, iconFrame: @escaping () -> CGRect?) {
+    init(capture: @escaping () -> Void) {
         self.capture = capture
-        self.iconFrame = iconFrame
     }
 
     func show() {
@@ -22,7 +20,7 @@ final class OnboardingWindowController: NSObject, NSWindowDelegate {
             let record = Preferences.onboarding ?? OnboardingRecord()
             let step = Onboarding.resumeStep(record, facts: .current) ?? .ready
             let screen = NSScreen.main ?? NSScreen.screens[0]
-            let model = OnboardingModel(step: step, record: record, screen: screen, capture: capture, iconFrame: iconFrame) { [weak self] in
+            let model = OnboardingModel(step: step, record: record, screen: screen, capture: capture) { [weak self] in
                 self?.finish()
             }
             let window = DarkroomWindow.make(title: "Set up Tearsheet", content: OnboardingView(model: model))
@@ -56,18 +54,28 @@ extension Onboarding.Facts {
     }
 }
 
-/// The screen the stage shows, in global points, and the stage's own size.
-struct StageScreen {
+/// The stage: the desktop from the film, an ocean with a photo open on it, laid out
+/// as a 1440-point-wide display in the shape of the screen the window opened on.
+/// The scene is drawn in its own points and scaled; cards, the selection and the
+/// menu are placed in stage points.
+struct StageScene {
+    /// Scene points.
+    static let width: CGFloat = 1440
+    static let menuBar: CGFloat = 24
+    static let titleBar: CGFloat = 28
+    static let photo = Bundle.main.image(forResource: "StageCoat")!
+    static let wallpaper = Bundle.main.image(forResource: "StageOcean")!
+
+    /// The real screen, for placing a real capture.
     let displayID: CGDirectDisplayID?
     let frame: CGRect
-    let visibleFrame: CGRect
     let backingScale: CGFloat
+    /// Stage points.
     let size: CGSize
 
     init(_ screen: NSScreen) {
         displayID = screen.displayID
         frame = screen.frame
-        visibleFrame = screen.visibleFrame
         backingScale = screen.backingScaleFactor
         // As wide as the panel allows, no taller than 320 points for a portrait display.
         var size = CGSize(width: 488, height: 488 * frame.height / frame.width)
@@ -75,20 +83,47 @@ struct StageScreen {
         self.size = CGSize(width: size.width.rounded(), height: size.height.rounded())
     }
 
-    /// Stage points per screen point.
-    var scale: CGFloat { size.width / frame.width }
+    /// Stage points per scene point.
+    var scale: CGFloat { size.width / Self.width }
+    var height: CGFloat { size.height / scale }
 
-    /// A global, bottom-left-origin rectangle in the stage's top-left-origin space.
-    func map(_ rect: CGRect) -> CGRect {
-        CGRect(x: (rect.minX - frame.minX) * scale, y: (frame.maxY - rect.maxY) * scale, width: rect.width * scale, height: rect.height * scale)
+    /// The photo's window, in scene points, where the film has it.
+    var window: CGRect {
+        let aspect = Self.photo.size.width / Self.photo.size.height
+        let width = min(Self.width * 0.58, (height * 0.72 - Self.titleBar) * aspect)
+        return CGRect(x: Self.width * 0.344, y: height * 0.155, width: width, height: width / aspect + Self.titleBar)
+    }
+
+    var photoFrame: CGRect {
+        CGRect(x: window.minX, y: window.minY + Self.titleBar, width: window.width, height: window.height - Self.titleBar)
+    }
+
+    /// Tearsheet's icon in the menu bar, in scene points.
+    static let glyph = CGRect(x: width - 186, y: 3, width: 18, height: 18)
+
+    func onStage(_ rect: CGRect) -> CGRect {
+        CGRect(x: rect.minX * scale, y: rect.minY * scale, width: rect.width * scale, height: rect.height * scale)
+    }
+
+    /// Around the coat, in stage points, as the film draws it.
+    var coatSelection: CGRect {
+        let photo = photoFrame
+        return onStage(CGRect(x: photo.minX + photo.width * 0.45, y: photo.minY + photo.height * 0.05, width: photo.width * 0.31, height: photo.height * 0.86)).integral
+    }
+
+    /// A rectangle on the real screen (bottom-left origin, relative to the display) at the same place on the stage.
+    func map(displayRect rect: CGRect) -> CGRect {
+        let x = rect.minX / frame.width, y = 1 - rect.maxY / frame.height
+        return CGRect(x: x * size.width, y: y * size.height, width: rect.width / frame.width * size.width, height: rect.height / frame.height * size.height)
     }
 
     /// Where a thumbnail of this many pixels sits, alone, in `corner`; as `ThumbnailStack` puts it.
-    func thumbnailFrame(pixelWidth: Int, height: Int, corner: ScreenCorner) -> CGRect {
-        let card = ThumbnailPanel.size(forPixelWidth: pixelWidth, height: height)
-        let inset = visibleFrame.insetBy(dx: ThumbnailStack.margin, dy: ThumbnailStack.margin)
-        let origin = CGPoint(x: corner.isLeft ? inset.minX : inset.maxX - card.width, y: corner.isBottom ? inset.minY : inset.maxY - card.height)
-        return map(CGRect(origin: origin, size: card))
+    func thumbnailFrame(pixelWidth: Int, height pixelHeight: Int, corner: ScreenCorner) -> CGRect {
+        let card = ThumbnailPanel.size(forPixelWidth: pixelWidth, height: pixelHeight)
+        let margin = ThumbnailStack.margin
+        let area = CGRect(x: 0, y: Self.menuBar, width: Self.width, height: height - Self.menuBar).insetBy(dx: margin, dy: margin)
+        let origin = CGPoint(x: corner.isLeft ? area.minX : area.maxX - card.width, y: corner.isBottom ? area.maxY - card.height : area.minY)
+        return onStage(CGRect(origin: origin, size: card))
     }
 }
 
@@ -124,15 +159,12 @@ final class OnboardingModel {
     var recordingStatus: ScreenRecordingStatus { ScreenRecordingStatus(granted: granted, captureWorked: captureWorked) }
 
     // Stage
-    let stage: StageScreen
-    let wallpaper: NSImage?
-    private(set) var snapshot: CGImage?
+    let stage: StageScene
     private(set) var developed = false
     private(set) var demo: SelectionDemo?
     private(set) var demoCard: StageCard?
     private(set) var captureCard: StageCard?
     private(set) var menuShown = false
-    private(set) var iconOnStage: CGRect?
 
     // ⇧⌘4
     private(set) var macOSClaimsShortcut = SystemScreenshotShortcut.isEnabled
@@ -149,7 +181,6 @@ final class OnboardingModel {
     @ObservationIgnored weak var window: NSWindow?
     @ObservationIgnored private let screen: NSScreen
     @ObservationIgnored private let captureRegion: () -> Void
-    @ObservationIgnored private let iconFrame: () -> CGRect?
     @ObservationIgnored private let finish: () -> Void
     @ObservationIgnored private var poll: Timer?
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
@@ -158,14 +189,12 @@ final class OnboardingModel {
 
     private var reduced: Bool { Darkroom.Motion.reduced }
 
-    init(step: OnboardingStep, record: OnboardingRecord, screen: NSScreen, capture: @escaping () -> Void, iconFrame: @escaping () -> CGRect?, finish: @escaping () -> Void) {
+    init(step: OnboardingStep, record: OnboardingRecord, screen: NSScreen, capture: @escaping () -> Void, finish: @escaping () -> Void) {
         self.step = step
         self.record = record
         self.screen = screen
-        stage = StageScreen(screen)
-        wallpaper = Self.wallpaper(for: screen)
+        stage = StageScene(screen)
         captureRegion = capture
-        self.iconFrame = iconFrame
         self.finish = finish
     }
 
@@ -204,7 +233,7 @@ final class OnboardingModel {
     private func refresh() {
         granted = ScreenRecordingPermission.isGranted
         macOSClaimsShortcut = SystemScreenshotShortcut.isEnabled
-        if granted, captureWorked != true { takeSnapshot() }
+        if granted, captureWorked != true { checkCapture() }
     }
 
     // MARK: Steps
@@ -213,12 +242,7 @@ final class OnboardingModel {
         guard let next = OnboardingStep(rawValue: step.rawValue + 1) else { return }
         finishDemo()
         if step == .firstCapture { record.passedFirstCapture = true }
-        if next == .ready {
-            LaunchAtLogin.configureOnFirstInstalledLaunch()
-            iconOnStage = iconFrame().flatMap { frame in
-                stage.frame.intersects(frame) ? stage.map(frame) : nil
-            }
-        }
+        if next == .ready { LaunchAtLogin.configureOnFirstInstalledLaunch() }
         withAnimation(Darkroom.Motion.entrance(reduced ? 0.2 : 0.3)) { step = next }
         enter(next)
     }
@@ -256,18 +280,18 @@ final class OnboardingModel {
 
     func reopen() { ScreenRecordingPermission.relaunch() }
 
-    /// A real capture of the stage's screen, without this window. If macOS says the
-    /// permission is granted but the capture fails, Tearsheet needs reopening.
-    private func takeSnapshot() {
+    /// Captures the screen once, and shows nothing of it. If macOS says the permission
+    /// is granted but the capture fails, Tearsheet needs reopening.
+    private func checkCapture() {
         guard !isSnapshotting, let window else { return }
         isSnapshotting = true
         Task { @MainActor in
             defer { isSnapshotting = false }
             do {
-                guard let shot = try await ScreenGrabber.snapshot(screens: [screen], excludingWindowNumbers: [window.windowNumber]).first else { return }
-                snapshot = shot.image
+                _ = try await ScreenGrabber.snapshot(screens: [screen], excludingWindowNumbers: [window.windowNumber])
                 captureWorked = true
-                // The moment Tearsheet can see the screen, which after macOS reopens it is a later step.
+                // The stage develops the moment Tearsheet can capture, which after macOS
+                // reopens it is a later step.
                 developed = true
                 if step == .shortcut || step == .firstCapture {
                     // Once the print has mostly come up.
@@ -301,15 +325,12 @@ final class OnboardingModel {
 
     // MARK: Demonstration
 
-    /// Draws a selection across the stage, then lifts it into the thumbnail corner.
-    /// Plays once; leaving the step, or a real capture, puts it straight at its end.
+    /// Draws a selection round the coat, then lifts it into the thumbnail corner, as the
+    /// film does. Plays once; leaving the step, or a real capture, puts it straight at its end.
     private func playDemo() {
-        guard demo == nil, demoCard == nil, captureCard == nil, let snapshot else { return }
-        let size = stage.size
-        let from = CGPoint(x: (size.width * 0.3).rounded(), y: (size.height * 0.26).rounded())
-        let to = CGPoint(x: (size.width * 0.62).rounded(), y: (size.height * 0.6).rounded())
-        let selection = CGRect(x: from.x, y: from.y, width: to.x - from.x, height: to.y - from.y)
-        guard let card = card(cropping: snapshot, to: selection) else { return }
+        guard developed, demo == nil, demoCard == nil, captureCard == nil, let card = coatCard() else { return }
+        let selection = stage.coatSelection
+        let from = selection.origin, to = CGPoint(x: selection.maxX, y: selection.maxY)
 
         if reduced {
             var landed = card
@@ -350,23 +371,24 @@ final class OnboardingModel {
         instant.disablesAnimations = true
         withTransaction(instant) {
             demo = nil
-            if demoCard == nil, captureCard == nil, let snapshot {
-                let selection = CGRect(x: stage.size.width * 0.3, y: stage.size.height * 0.26, width: stage.size.width * 0.32, height: stage.size.height * 0.34)
-                demoCard = card(cropping: snapshot, to: selection)
-            }
+            if demoCard == nil, captureCard == nil { demoCard = coatCard() }
             demoCard?.lifted = true
             placeCards()
         }
     }
 
-    private func card(cropping image: CGImage, to selection: CGRect) -> StageCard? {
-        let pixels = CGFloat(image.width) / stage.size.width
-        let rect = CGRect(x: selection.minX * pixels, y: selection.minY * pixels, width: selection.width * pixels, height: selection.height * pixels).integral
+    /// The coat, cut from the photo where the selection sits, as a card at the selection.
+    private func coatCard() -> StageCard? {
+        let selection = stage.coatSelection
+        let photo = stage.onStage(stage.photoFrame)
+        guard let image = StageScene.photo.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let pixels = CGFloat(image.width) / photo.width
+        let rect = CGRect(x: (selection.minX - photo.minX) * pixels, y: (selection.minY - photo.minY) * pixels, width: selection.width * pixels, height: selection.height * pixels).integral
         guard let crop = image.cropping(to: rect) else { return nil }
         return StageCard(image: NSImage(cgImage: crop, size: selection.size), pixelWidth: crop.width, pixelHeight: crop.height, frame: selection)
     }
 
-    /// Pixels on the real display per stage point, for the size readout.
+    /// Pixels per stage point on a Retina display the size of the scene, for the size readout.
     var pixelsPerStagePoint: CGFloat { stage.backingScale / stage.scale }
 
     // MARK: First capture
@@ -382,7 +404,7 @@ final class OnboardingModel {
         var start = corner
         if !reduced {
             if capture.displayID == stage.displayID {
-                start = stage.map(capture.rect.offsetBy(dx: stage.frame.minX, dy: stage.frame.minY))
+                start = stage.map(displayRect: capture.rect)
             } else {
                 start = CGRect(x: stage.size.width / 2 - corner.width / 2, y: stage.size.height / 2 - corner.height / 2, width: corner.width, height: corner.height)
             }
@@ -409,20 +431,5 @@ final class OnboardingModel {
     private func placeCards() {
         if let card = demoCard { demoCard?.frame = stage.thumbnailFrame(pixelWidth: card.pixelWidth, height: card.pixelHeight, corner: corner) }
         if let card = captureCard { captureCard?.frame = stage.thumbnailFrame(pixelWidth: card.pixelWidth, height: card.pixelHeight, corner: corner) }
-    }
-
-    // MARK: Wallpaper
-
-    /// The desktop picture, small, for the stage before Tearsheet can see the screen.
-    private static func wallpaper(for screen: NSScreen) -> NSImage? {
-        guard let url = NSWorkspace.shared.desktopImageURL(for: screen),
-              let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                  kCGImageSourceCreateThumbnailFromImageAlways: true,
-                  kCGImageSourceThumbnailMaxPixelSize: 1200,
-                  kCGImageSourceCreateThumbnailWithTransform: true,
-              ] as CFDictionary)
-        else { return nil }
-        return NSImage(cgImage: image, size: .zero)
     }
 }

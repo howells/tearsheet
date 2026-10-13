@@ -6,10 +6,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var coordinator = CaptureCoordinator()
     private var statusMenu: StatusMenu?
     private let settings = SettingsWindowController()
-    private lazy var onboarding = OnboardingWindowController(
-        capture: { [coordinator] in Task { await coordinator.captureRegion(openEditor: false) } },
-        iconFrame: { [weak self] in self?.statusMenu?.iconFrame }
-    )
+    private lazy var onboarding = OnboardingWindowController { [coordinator] in
+        Task { await coordinator.captureRegion(openEditor: false) }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         MainMenu.install()
