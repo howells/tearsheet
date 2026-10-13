@@ -62,6 +62,11 @@ final class ThumbnailPanel: NSPanel {
 
     override var canBecomeKey: Bool { false }
 
+    /// The window is the card plus a clear margin, which reaches into the menu bar
+    /// in a top corner. AppKit would push the whole window below the menu bar and
+    /// the card with it, so the frame is taken as given.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
+
     /// Always 240 points wide, as in the mockup; the height follows the capture
     /// between 96 and 180 points, and the image fills the card.
     static func size(for item: CaptureItem) -> CGSize {
