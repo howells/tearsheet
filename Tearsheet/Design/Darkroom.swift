@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// The darkroom palette and type from the Paper file: graphite chrome, paper
 /// text, one muted grey. SF stands in for the mockup's Inter.
@@ -24,6 +25,11 @@ enum Darkroom {
         /// Moving between two places on screen.
         static let easeInOut = CAMediaTimingFunction(controlPoints: 0.77, 0, 0.175, 1)
 
+        /// `easeOut` for SwiftUI.
+        static func entrance(_ duration: TimeInterval) -> Animation { .timingCurve(0.23, 1, 0.32, 1, duration: duration) }
+        /// `easeInOut` for SwiftUI.
+        static func travel(_ duration: TimeInterval) -> Animation { .timingCurve(0.77, 0, 0.175, 1, duration: duration) }
+
         /// A spring given as Motion gives one: roughly when it arrives, and how far it
         /// overshoots. Motion's mapping, with mass 1 and a damping ratio of 1 - bounce.
         struct Spring {
@@ -40,6 +46,9 @@ enum Darkroom {
             static let standard = Spring(visualDuration: 0.3, bounce: 0)
             /// A settle after a throw, like a new capture landing on the pile.
             static let settle = Spring(visualDuration: 0.35, bounce: 0.15)
+
+            /// The same spring for SwiftUI, which carries velocity when retargeted.
+            var animation: Animation { .interpolatingSpring(mass: 1, stiffness: stiffness, damping: damping) }
         }
 
         /// With Reduce Motion on, things fade in place instead of travelling or scaling.
@@ -109,13 +118,16 @@ final class DarkroomButton: NSControl {
         case tinted
     }
 
-    var title: String { didSet { needsDisplay = true; invalidateIntrinsicContentSize() } }
+    var title: String { didSet { needsDisplay = true; invalidateIntrinsicContentSize(); setAccessibilityLabel(title) } }
     var handler: (() -> Void)?
+    /// The window's default action: Return presses it.
+    var isDefault = false
     private let style: Style
     private let pill: Bool
     private let fixedWidth: CGFloat?
     private var isPressed = false { didSet { needsDisplay = true } }
     private var isHovered = false { didSet { needsDisplay = true } }
+    override var isEnabled: Bool { didSet { needsDisplay = true; setAccessibilityEnabled(isEnabled) } }
 
     init(_ title: String, style: Style, pill: Bool = false, width: CGFloat? = nil, handler: (() -> Void)? = nil) {
         self.title = title
@@ -146,6 +158,7 @@ final class DarkroomButton: NSControl {
     override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
 
     override func draw(_ dirtyRect: NSRect) {
+        if !isEnabled { NSGraphicsContext.current?.cgContext.setAlpha(0.35) }
         let face = CGRect(x: 0, y: (bounds.height - faceHeight) / 2, width: bounds.width, height: faceHeight).insetBy(dx: 0.5, dy: 0.5)
         let radius: CGFloat = pill ? faceHeight / 2 : style == .tinted ? 7 : 8
         let shape = NSBezierPath(roundedRect: face, xRadius: radius, yRadius: radius)
@@ -167,7 +180,7 @@ final class DarkroomButton: NSControl {
             shape.lineWidth = 0.5
             shape.stroke()
         }
-        if isPressed || isHovered {
+        if isEnabled, isPressed || isHovered {
             (style == .primary ? NSColor.black.withAlphaComponent(isPressed ? 0.12 : 0.05) : NSColor.white.withAlphaComponent(isPressed ? 0.1 : 0.05)).setFill()
             shape.fill()
         }
@@ -198,6 +211,7 @@ final class DarkroomButton: NSControl {
     override func mouseExited(with event: NSEvent) { isHovered = false }
 
     override func mouseDown(with event: NSEvent) {
+        guard isEnabled else { return }
         isPressed = true
         var inside = true
         while let next = window?.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) {
@@ -210,6 +224,16 @@ final class DarkroomButton: NSControl {
     }
 
     override func accessibilityPerformPress() -> Bool {
+        guard isEnabled else { return false }
+        handler?()
+        return true
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        guard isDefault, isEnabled, window?.isKeyWindow == true, modifiers.isEmpty, event.keyCode == 36 || event.keyCode == 76 else {
+            return super.performKeyEquivalent(with: event)
+        }
         handler?()
         return true
     }
