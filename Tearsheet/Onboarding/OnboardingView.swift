@@ -36,12 +36,17 @@ struct OnboardingView: View {
         .background(Color.graphite)
     }
 
-    /// The next step's controls slide in from the right as the last one leaves to the left.
+    /// The last step's controls leave quickly to the left, then the next one's slide in
+    /// from the right, so the two never sit over each other.
     private var stepTransition: AnyTransition {
-        reduceMotion ? .opacity : .asymmetric(
-            insertion: .opacity.combined(with: .offset(x: 16)),
-            removal: .opacity.combined(with: .offset(x: -16))
-        )
+        let leave = Darkroom.Motion.entrance(0.12)
+        let arrive = Darkroom.Motion.entrance(reduceMotion ? 0.2 : 0.3).delay(0.1)
+        return reduceMotion
+            ? .asymmetric(insertion: .opacity.animation(arrive), removal: .opacity.animation(leave))
+            : .asymmetric(
+                insertion: .opacity.combined(with: .offset(x: 16)).animation(arrive),
+                removal: .opacity.combined(with: .offset(x: -16)).animation(leave)
+            )
     }
 
     // MARK: Steps
@@ -103,7 +108,7 @@ struct OnboardingView: View {
             }
             .groupBox()
 
-            Note("Switches off the macOS ⇧⌘4 in Keyboard settings, where you can switch it back on.")
+            Note("Switches off the macOS ⇧⌘4. Keyboard settings can switch it back on.")
         }
     }
 
@@ -177,6 +182,8 @@ struct OnboardingView: View {
             }
         }
         .frame(height: 44)
+        // The count and buttons change with the step at once; crossfaded, two buttons overlap.
+        .animation(nil, value: model.step)
     }
 }
 

@@ -267,13 +267,13 @@ final class OnboardingModel {
                 guard let shot = try await ScreenGrabber.snapshot(screens: [screen], excludingWindowNumbers: [window.windowNumber]).first else { return }
                 snapshot = shot.image
                 captureWorked = true
-                // The develop is the moment the permission takes; on a resumed run it's just there.
-                if step == .screenRecording { developed = true } else {
-                    var instant = Transaction()
-                    instant.disablesAnimations = true
-                    withTransaction(instant) { developed = true }
+                // The moment Tearsheet can see the screen, which after macOS reopens it is a later step.
+                developed = true
+                if step == .shortcut || step == .firstCapture {
+                    // Once the print has mostly come up.
+                    try? await Task.sleep(for: .milliseconds(reduced ? 300 : 1400))
+                    if step == .shortcut || step == .firstCapture { playDemo() }
                 }
-                if step == .shortcut || step == .firstCapture { playDemo() }
             } catch {
                 captureWorked = false
             }
