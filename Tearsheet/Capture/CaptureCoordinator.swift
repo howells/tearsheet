@@ -12,6 +12,16 @@ final class CaptureCoordinator {
         thumbnails.onAnnotate = { [editors] item in editors.open(item) }
     }
 
+    /// Posted with a `Capture` once a region capture is on the clipboard and in the pile.
+    static let didCapture = Notification.Name("TearsheetDidCapture")
+
+    struct Capture {
+        let image: CGImage
+        let displayID: CGDirectDisplayID
+        /// Point-space rectangle relative to the display's bottom-left corner.
+        let rect: CGRect
+    }
+
     func captureRegion(openEditor: Bool) async {
         await select(mode: .capture, openEditor: openEditor)
     }
@@ -54,7 +64,7 @@ final class CaptureCoordinator {
             return
         case let .region(selection):
             Preferences.lastRegion = LastRegion(displayID: selection.snapshot.displayID, rect: selection.rect)
-            deliver(crop(selection.snapshot, to: selection.rect), scale: selection.snapshot.scale, openEditor: openEditor)
+            deliver(crop(selection.snapshot, to: selection.rect), scale: selection.snapshot.scale, openEditor: openEditor, from: (selection.snapshot.displayID, selection.rect))
         case let .images(found):
             guard let tab else { return }
             await deliverImages(found, from: tab, snapshots: snapshots)
@@ -75,7 +85,7 @@ final class CaptureCoordinator {
             guard let snapshot = try await ScreenGrabber.snapshot(screens: [screen], excludingWindowNumbers: thumbnails.windowNumbers).first else { return }
             let rect = last.rect.intersection(CGRect(origin: .zero, size: screen.frame.size))
             guard !rect.isNull, rect.width >= 2, rect.height >= 2 else { return }
-            deliver(crop(snapshot, to: rect), scale: snapshot.scale, openEditor: false)
+            deliver(crop(snapshot, to: rect), scale: snapshot.scale, openEditor: false, from: (snapshot.displayID, rect))
         } catch {
             report(error)
         }
@@ -86,13 +96,14 @@ final class CaptureCoordinator {
         return snapshot.image.cropping(to: pixels)
     }
 
-    private func deliver(_ image: CGImage?, scale: CGFloat, openEditor: Bool) {
+    private func deliver(_ image: CGImage?, scale: CGFloat, openEditor: Bool, from region: (displayID: CGDirectDisplayID, rect: CGRect)) {
         guard let image else { return }
         do {
             let item = try CaptureItem(image: image, scale: scale)
             Clipboard.copy(item)
             thumbnails.show(item)
             if openEditor { editors.open(item) }
+            NotificationCenter.default.post(name: Self.didCapture, object: Capture(image: image, displayID: region.displayID, rect: region.rect))
         } catch {
             report(error)
         }

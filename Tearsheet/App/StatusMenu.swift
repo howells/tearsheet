@@ -5,6 +5,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private let coordinator: CaptureCoordinator
     private let openSettings: () -> Void
+    /// Set while the first run is unfinished; offers to pick it up again.
+    var openSetup: (() -> Void)?
 
     init(coordinator: CaptureCoordinator, openSettings: @escaping () -> Void) {
         self.coordinator = coordinator
@@ -14,6 +16,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.delegate = self
         item.menu = menu
     }
+
+    /// Where the icon sits in the menu bar, in screen coordinates.
+    var iconFrame: CGRect? { item.button?.window?.frame }
 
     /// The app icon reduced to one colour: a print with its corner turned up.
     private static let glyph: NSImage = {
@@ -57,6 +62,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             menu.addItem(entry("Grant Screen Recording Access…", action: #selector(openPermissionSettings)))
         }
         menu.addItem(.separator())
+        if openSetup != nil { menu.addItem(entry("Set Up Tearsheet…", action: #selector(showSetup))) }
         menu.addItem(entry("Settings…", key: ",", action: #selector(showSettings)))
         menu.addItem(entry("Quit Tearsheet", key: "q", action: #selector(quit)))
     }
@@ -75,5 +81,6 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     @objc private func takeShiftCommand4() { SystemScreenshotShortcut.turnOff() }
     @objc private func openPermissionSettings() { ScreenRecordingPermission.openSettings() }
     @objc private func showSettings() { openSettings() }
+    @objc private func showSetup() { openSetup?() }
     @objc private func quit() { NSApp.terminate(nil) }
 }

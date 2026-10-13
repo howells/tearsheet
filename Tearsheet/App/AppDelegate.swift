@@ -1,15 +1,19 @@
 import AppKit
+import TearsheetCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hotKeys = HotKeyCenter()
     private lazy var coordinator = CaptureCoordinator()
     private var statusMenu: StatusMenu?
     private let settings = SettingsWindowController()
+    private lazy var onboarding = OnboardingWindowController(
+        capture: { [coordinator] in Task { await coordinator.captureRegion(openEditor: false) } },
+        iconFrame: { [weak self] in self?.statusMenu?.iconFrame }
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         MainMenu.install()
         CaptureStore.removeStaleCaptures()
-        LaunchAtLogin.configureOnFirstInstalledLaunch()
 
         statusMenu = StatusMenu(coordinator: coordinator) { [settings] in settings.show() }
 
@@ -21,6 +25,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated { hotKeys.reinstall() }
         }
 
-        if !ScreenRecordingPermission.isGranted { ScreenRecordingPermission.request() }
+        // Tearsheet in use before the first run existed counts as set up.
+        let record = Onboarding.record(stored: Preferences.onboarding, hasPriorUse: Preferences.didConfigureLaunchAtLogin || Preferences.lastRegion != nil)
+        Preferences.onboarding = record
+        if Onboarding.resumeStep(record, facts: .current) != nil {
+            statusMenu?.openSetup = { [onboarding] in onboarding.show() }
+            onboarding.onFinish = { [weak self] in self?.statusMenu?.openSetup = nil }
+            onboarding.show()
+        } else {
+            LaunchAtLogin.configureOnFirstInstalledLaunch()
+            if !ScreenRecordingPermission.isGranted { ScreenRecordingPermission.request() }
+        }
     }
 }

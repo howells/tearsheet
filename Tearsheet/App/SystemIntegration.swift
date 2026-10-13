@@ -11,6 +11,16 @@ enum ScreenRecordingPermission {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
     }
 
+    /// Starts a fresh copy once this one has quit, which is what macOS needs
+    /// before a newly granted Screen Recording permission takes effect.
+    static func relaunch() {
+        let reopen = Process()
+        reopen.executableURL = URL(fileURLWithPath: "/bin/sh")
+        reopen.arguments = ["-c", "while kill -0 \"$1\" 2>/dev/null; do sleep 0.1; done; /usr/bin/open \"$2\"", "sh", String(getpid()), Bundle.main.bundlePath]
+        try? reopen.run()
+        NSApp.terminate(nil)
+    }
+
     static func showMissingAlert() {
         let alert = NSAlert()
         alert.messageText = "Tearsheet needs Screen Recording access"

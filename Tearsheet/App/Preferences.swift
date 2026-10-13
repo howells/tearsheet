@@ -28,6 +28,12 @@ enum Preferences {
 
     static let thumbnailCornerDidChange = Notification.Name("TearsheetThumbnailCornerDidChange")
 
+    /// How far the first run has got. Nil on a Mac that has never stored it.
+    static var onboarding: OnboardingRecord? {
+        get { defaults.data(forKey: "onboarding").flatMap { try? JSONDecoder().decode(OnboardingRecord.self, from: $0) } }
+        set { defaults.set(newValue.flatMap { try? JSONEncoder().encode($0) }, forKey: "onboarding") }
+    }
+
     /// Launch at login is switched on once, on the first run from /Applications;
     /// after that the user's choice in Settings stands.
     static var didConfigureLaunchAtLogin: Bool {
