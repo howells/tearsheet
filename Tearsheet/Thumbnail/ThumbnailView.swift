@@ -216,12 +216,21 @@ final class ThumbnailView: NSView, NSDraggingSource {
     private var swipeWatch: Timer?
 
     /// The card can slide out from under a pointer that stays put, and the gesture's
-    /// last event then goes to whatever is beneath. A swipe that goes quiet finishes anyway.
+    /// last event then goes to whatever is beneath. A swipe that goes quiet after the card
+    /// has left the pointer finishes anyway; one paused over the card is still the fingers'.
     private func finishSwipeIfQuiet() {
         swipeWatch?.invalidate()
         swipeWatch = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated { self?.finishSwipe() }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if self.isUnderPointer { self.finishSwipeIfQuiet() } else { self.finishSwipe() }
+            }
         }
+    }
+
+    private var isUnderPointer: Bool {
+        guard let window else { return false }
+        return window.convertToScreen(convert(bounds, to: nil)).contains(NSEvent.mouseLocation)
     }
 
     private func finishSwipe() {
