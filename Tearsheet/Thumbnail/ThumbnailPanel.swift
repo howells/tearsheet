@@ -65,7 +65,11 @@ final class ThumbnailPanel: NSPanel {
     /// Always 240 points wide, as in the mockup; the height follows the capture
     /// between 96 and 180 points, and the image fills the card.
     static func size(for item: CaptureItem) -> CGSize {
-        let aspect = CGFloat(item.image.height) / max(CGFloat(item.image.width), 1)
+        size(forPixelWidth: item.image.width, height: item.image.height)
+    }
+
+    static func size(forPixelWidth width: Int, height: Int) -> CGSize {
+        let aspect = CGFloat(height) / max(CGFloat(width), 1)
         return CGSize(width: 240, height: min(180, max(96, (240 * aspect).rounded())))
     }
 

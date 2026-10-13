@@ -9,7 +9,9 @@ final class ThumbnailStack {
     private var panels: [ThumbnailPanel] = []
     private var screen: NSScreen?
     private let limit = 5
-    private let margin: CGFloat = 20
+    /// Between the pile and the edges of the screen's visible frame.
+    static let margin: CGFloat = 20
+    private var margin: CGFloat { Self.margin }
     private let spacing: CGFloat = 12
     private let springs = PoseSprings()
 
@@ -19,6 +21,12 @@ final class ThumbnailStack {
     private var pointerLeftAt: Date?
 
     var windowNumbers: Set<Int> { Set(panels.map(\.windowNumber)) }
+
+    init() {
+        NotificationCenter.default.addObserver(forName: Preferences.thumbnailCornerDidChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.layout() }
+        }
+    }
 
     func show(_ item: CaptureItem) {
         screen = NSScreen.underMouse

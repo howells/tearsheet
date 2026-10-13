@@ -20,8 +20,13 @@ enum Preferences {
     /// The screen corner the thumbnails gather in.
     static var thumbnailCorner: ScreenCorner {
         get { defaults.string(forKey: "thumbnailCorner").flatMap(ScreenCorner.init(rawValue:)) ?? .bottomLeft }
-        set { defaults.set(newValue.rawValue, forKey: "thumbnailCorner") }
+        set {
+            defaults.set(newValue.rawValue, forKey: "thumbnailCorner")
+            NotificationCenter.default.post(name: thumbnailCornerDidChange, object: nil)
+        }
     }
+
+    static let thumbnailCornerDidChange = Notification.Name("TearsheetThumbnailCornerDidChange")
 
     /// Launch at login is switched on once, on the first run from /Applications;
     /// after that the user's choice in Settings stands.
