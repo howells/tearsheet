@@ -47,7 +47,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.removeAllItems()
         menu.addItem(entry("Capture Region", key: "4", modifiers: [.command, .shift], action: #selector(captureRegion)))
         menu.addItem(entry("Capture and Annotate", key: "4", modifiers: [.command, .shift, .option], action: #selector(captureIntoEditor)))
-        menu.addItem(entry("Repeat Last Region", key: "6", modifiers: [.command, .shift], action: #selector(repeatLastRegion)))
+        menu.addItem(entry("Repeat Last Region", key: "6", modifiers: [.command, .shift, .option], action: #selector(repeatLastRegion)))
         menu.addItem(entry("Extract Images", key: "i", modifiers: [.command, .shift, .option], action: #selector(extractImages)))
         if SystemScreenshotShortcut.isEnabled {
             menu.addItem(.separator())

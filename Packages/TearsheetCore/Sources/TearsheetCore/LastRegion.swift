@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// The most recent selection, kept so ⇧⌘6 can capture it again.
+/// The most recent selection, kept so ⌥⇧⌘6 can capture it again.
 public struct LastRegion: Codable, Equatable, Sendable {
     public var displayID: UInt32
     /// Point-space rectangle relative to the display's bottom-left corner.

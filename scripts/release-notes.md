@@ -4,7 +4,7 @@ Region screenshots, a single-pen annotation editor and image extraction from Saf
 |---|---|
 | ⇧⌘4 | Capture a region to the clipboard |
 | ⌥⇧⌘4 | Capture a region into the editor |
-| ⇧⌘6 | Capture the last region again |
+| ⌥⇧⌘6 | Capture the last region again |
 | ⌥⇧⌘I | Copy the original images from the page in Safari or Chrome. Tab switches to this while selecting a region |
 
 ## Install

@@ -107,7 +107,7 @@ private struct SettingsView: View {
                         Hairline()
                         ShortcutRow(title: "Capture and annotate", keys: ["⌥", "⇧", "⌘", "4"])
                         Hairline()
-                        ShortcutRow(title: "Repeat last region", keys: ["⇧", "⌘", "6"])
+                        ShortcutRow(title: "Repeat last region", keys: ["⌥", "⇧", "⌘", "6"])
                         Hairline()
                         ShortcutRow(title: "Extract images", keys: ["⌥", "⇧", "⌘", "I"])
                     }
