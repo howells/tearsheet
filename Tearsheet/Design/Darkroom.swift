@@ -143,6 +143,7 @@ final class DarkroomButton: NSControl {
         self.handler = handler
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
+        setAccessibilityElement(true)
         setAccessibilityRole(.button)
         setAccessibilityLabel(title)
         addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
@@ -272,6 +273,7 @@ final class DarkroomIconButton: NSControl {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         toolTip = label
+        setAccessibilityElement(true)
         setAccessibilityRole(.button)
         setAccessibilityLabel(label)
         NSLayoutConstraint.activate([widthAnchor.constraint(equalToConstant: 44), heightAnchor.constraint(equalToConstant: 44)])

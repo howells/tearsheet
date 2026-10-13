@@ -178,6 +178,7 @@ struct Keycaps: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
+        .accessibilityAddTraits(.isStaticText)
     }
 
     /// "Shift Command 4", as the keys are said.
