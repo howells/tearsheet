@@ -127,7 +127,13 @@ final class DarkroomButton: NSControl {
     private let fixedWidth: CGFloat?
     private var isPressed = false { didSet { needsDisplay = true } }
     private var isHovered = false { didSet { needsDisplay = true } }
-    override var isEnabled: Bool { didSet { needsDisplay = true; setAccessibilityEnabled(isEnabled) } }
+    override var isEnabled: Bool {
+        didSet {
+            needsDisplay = true
+            setAccessibilityEnabled(isEnabled)
+            if !isEnabled, window?.firstResponder === self { window?.makeFirstResponder(nil) }
+        }
+    }
 
     init(_ title: String, style: Style, pill: Bool = false, width: CGFloat? = nil, handler: (() -> Void)? = nil) {
         self.title = title
@@ -157,11 +163,26 @@ final class DarkroomButton: NSControl {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .arrow) }
 
+    // Reached with Tab when keyboard navigation is on, as a system button is; Space presses it.
+    override var acceptsFirstResponder: Bool { isEnabled }
+    override var canBecomeKeyView: Bool { isEnabled && NSApp.isFullKeyboardAccessEnabled }
+    override var focusRingMaskBounds: NSRect { face }
+    override func drawFocusRingMask() { NSBezierPath(roundedRect: face, xRadius: faceRadius, yRadius: faceRadius).fill() }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 49, isEnabled { handler?() } else { super.keyDown(with: event) }
+    }
+
+    /// The drawn button, centred in its taller target.
+    private var face: CGRect {
+        CGRect(x: 0, y: (bounds.height - faceHeight) / 2, width: bounds.width, height: faceHeight).insetBy(dx: 0.5, dy: 0.5)
+    }
+
+    private var faceRadius: CGFloat { pill ? faceHeight / 2 : style == .tinted ? 7 : 8 }
+
     override func draw(_ dirtyRect: NSRect) {
         if !isEnabled { NSGraphicsContext.current?.cgContext.setAlpha(0.35) }
-        let face = CGRect(x: 0, y: (bounds.height - faceHeight) / 2, width: bounds.width, height: faceHeight).insetBy(dx: 0.5, dy: 0.5)
-        let radius: CGFloat = pill ? faceHeight / 2 : style == .tinted ? 7 : 8
-        let shape = NSBezierPath(roundedRect: face, xRadius: radius, yRadius: radius)
+        let shape = NSBezierPath(roundedRect: face, xRadius: faceRadius, yRadius: faceRadius)
 
         NSGraphicsContext.saveGraphicsState()
         if style == .primary || style == .glass, pill {

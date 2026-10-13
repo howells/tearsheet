@@ -177,7 +177,13 @@ struct Keycaps: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(keys.joined())
+        .accessibilityLabel(spoken)
+    }
+
+    /// "Shift Command 4", as the keys are said.
+    private var spoken: String {
+        let names = ["⌃": "Control", "⌥": "Option", "⇧": "Shift", "⌘": "Command"]
+        return keys.map { names[$0] ?? $0 }.joined(separator: " ")
     }
 }
 
