@@ -24,14 +24,17 @@ struct Stage: View {
                 .animation(Darkroom.Motion.entrance(reduceMotion ? 0.3 : 1.8), value: model.developed)
                 .opacity(model.developed ? 1 : 0.35)
                 .animation(Darkroom.Motion.entrance(reduceMotion ? 0.3 : 0.6), value: model.developed)
+                .accessibilityHidden(true)
 
             if let demo = model.demo {
                 SelectionView(from: demo.from, to: demo.to, progress: demo.progress, size: size, pixelsPerPoint: model.pixelsPerStagePoint, showsSelection: demo.showsSelection)
                     .opacity(demo.dim)
+                    .accessibilityHidden(true)
             }
 
             ForEach([model.demoCard, model.captureCard].compactMap(\.self)) { card in
                 CardView(card: card, radius: max(2, 10 * model.stage.scale))
+                    .accessibilityHidden(true)
             }
 
             if model.step == .ready {
@@ -41,7 +44,8 @@ struct Stage: View {
         .frame(width: size.width, height: size.height)
         // The panel's 10-point corners less its 6-point inset.
         .clipShape(RoundedRectangle(cornerRadius: 4))
-        .accessibilityHidden(true)
+        // The scene is decoration; only the shortcut menu on the last step is read out.
+        .accessibilityElement(children: .contain)
     }
 
     /// Tearsheet's menu, dropped from its icon in the menu bar, holding the shortcuts.
@@ -59,6 +63,7 @@ struct Stage: View {
                 .frame(width: icon.width + 3, height: icon.height + 1)
                 .offset(x: icon.minX - 1.5, y: icon.minY - 0.5)
                 .opacity(model.menuShown ? 1 : 0)
+                .accessibilityHidden(true)
             ShortcutList()
                 .frame(width: width)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Color.graphite))
